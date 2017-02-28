@@ -48,6 +48,7 @@
 #endif
 
 // Read-Write Data Types
+#ifndef _TYPE_DEFINED1_
 typedef signed char           SINT8;      // Signed 8-bit integer (7-bit magnitude)
 typedef unsigned char         UINT8;      // Unsigned 8-bit integer
 typedef signed short          SINT16;     // Signed 16-bit integer (15-bit magnitude)
@@ -56,6 +57,7 @@ typedef signed int            SINT32;     // Signed 32-bit integer (31-bit magni
 typedef unsigned int          UINT32;     // Unsigned 32-bit integer
 typedef long signed int       SINT40;     // Long signed 40-bit integer
 typedef long unsigned int     UINT40;     // Long unsigned 40-bit integer
+#endif
 
 // All pointers are 32 bits long
 typedef SINT8                 *PSINT8;    // Pointer to SINT8
@@ -91,7 +93,7 @@ typedef const unsigned char   UInt8Rom;   // 8 bit unsigned integer
 typedef const float           FloatRom;   // IEEE 32-bit
 typedef const double          DoubleRom;  // IEEE 64-bit
 
-#ifndef _WINDEF_ 
+#ifndef _WINDEF_
 
 // Read-Write Data Types
 typedef signed char           Int8;       // 8 bit signed integer
@@ -175,15 +177,15 @@ typedef void *PVOID;            // pointer to void
 
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
-#if defined(_TMS320C6X)           // TMS320C6xx type definitions 
+#if defined(_TMS320C6X)           // TMS320C6xx type definitions
 
-// Read-Write Data Types 
-typedef short                   Int16;      // 16 bit signed integer 
-typedef unsigned short          UInt16;     // 16 bit unsigned integer 
-typedef int                     Int32;      // 32 bit signed integer 
-typedef unsigned int            UInt32;     // 32 bit unsigned signed integer 
-typedef long                    Long40;     // 40 bit signed integer 
-typedef unsigned long           ULong40;    // 40 bit unsigned signed integer 
+// Read-Write Data Types
+typedef short                   Int16;      // 16 bit signed integer
+typedef unsigned short          UInt16;     // 16 bit unsigned integer
+typedef int                     Int32;      // 32 bit signed integer
+typedef unsigned int            UInt32;     // 32 bit unsigned signed integer
+typedef long                    Long40;     // 40 bit signed integer
+typedef unsigned long           ULong40;    // 40 bit unsigned signed integer
 
 // Size of Read-Write Data Types - in bytes
 #define SIZEOF_Int16   2
@@ -194,12 +196,12 @@ typedef unsigned long           ULong40;    // 40 bit unsigned signed integer
 #define SIZEOF_ULong40 5
 
 // Read-Only Data Types - should be only used for ROM code
-typedef const short             Int16Rom;   // 16 bit signed integer 
-typedef const unsigned short    UInt16Rom;  // 16 bit unsigned integer 
-typedef const int               Int32Rom;   // 32 bit signed integer 
-typedef const unsigned int      UInt32Rom;  // 32 bit unsigned signed integer 
-typedef const long              Long40Rom;  // 40 bit signed integer 
-typedef const unsigned long     ULong40Rom; // 40 bit unsigned signed integer 
+typedef const short             Int16Rom;   // 16 bit signed integer
+typedef const unsigned short    UInt16Rom;  // 16 bit unsigned integer
+typedef const int               Int32Rom;   // 32 bit signed integer
+typedef const unsigned int      UInt32Rom;  // 32 bit unsigned signed integer
+typedef const long              Long40Rom;  // 40 bit signed integer
+typedef const unsigned long     ULong40Rom; // 40 bit unsigned signed integer
 
 // Size of Read-Only Data Types - in bytes
 #define SIZEOF_Int16Rom   2
@@ -209,19 +211,19 @@ typedef const unsigned long     ULong40Rom; // 40 bit unsigned signed integer
 #define SIZEOF_Long40Rom  5
 #define SIZEOF_ULong40Rom 5
 
-#else                             // 32 bits PC Host type definitions 
+#else                             // 32 bits PC Host type definitions
 
-// Read-Write Data Types 
-typedef short                   Int16;      // 16 bit signed integer 
-typedef unsigned short          UInt16;     // 16 bit unsigned integer 
-typedef int                     Int32;      // 32 bit signed integer 
-typedef unsigned int            UInt32;     // 32 bit unsigned integer 
+// Read-Write Data Types
+typedef short                   Int16;      // 16 bit signed integer
+typedef unsigned short          UInt16;     // 16 bit unsigned integer
+typedef int                     Int32;      // 32 bit signed integer
+typedef unsigned int            UInt32;     // 32 bit unsigned integer
 
-// Read-Only Data Types - should be only used for ROM code 
-typedef const short             Int16Rom;   // 16 bit signed integer 
-typedef const unsigned short    UInt16Rom;  // 16 bit unsigned integer 
-typedef const int               Int32Rom;   // 32 bit signed integer 
-typedef const unsigned int      UInt32Rom;  // 32 bit unsigned integer 
+// Read-Only Data Types - should be only used for ROM code
+typedef const short             Int16Rom;   // 16 bit signed integer
+typedef const unsigned short    UInt16Rom;  // 16 bit unsigned integer
+typedef const int               Int32Rom;   // 32 bit signed integer
+typedef const unsigned int      UInt32Rom;  // 32 bit unsigned integer
 
 #endif
 

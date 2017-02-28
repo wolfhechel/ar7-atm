@@ -138,59 +138,63 @@ static int RxTeardownInt(HAL_DEVICE *HalDev, int Ch)
   }
 
 /* return of 0 means that this code executed, -1 means the interrupt was not
-   a teardown interrupt */
+   a teardown interrupt.  Note: this code is always called with Queue == 0 (hi priority). */
 static int TxTeardownInt(HAL_DEVICE *HalDev, int Ch, int Queue)
   {
    bit32u base = HalDev->dev_base;
    HAL_TCB *Last, *Curr, *First;                                    /*+GSG 030303*/
-
    int i;
+
    volatile bit32u *pTmp;
 
    if (((*(pTXH_CPPI_COMP_PTR( base )+( Ch *64)+( Queue )))  & TEARDOWN_VAL) == TEARDOWN_VAL)
      {
-      /* return outstanding buffers to OS                             +RC3.02*/
-      Curr = HalDev->TxActQueueHead[Ch][Queue];                     /*+GSG 030303*/
-      First = Curr;                                                 /*+GSG 030303*/
-      while (Curr)                                                  /*+GSG 030303*/
-    {                                                           /*+GSG 030303*/
-     /* Pop TCB(s) for packet from the stack */                 /*+GSG 030303*/
-         Last = Curr->Eop;                                          /*+GSG 030303*/
-         HalDev->TxActQueueHead[Ch][Queue] = Last->Next;            /*+GSG 030303*/
+      /* perform all actions for both queues (+GSG 040212) */
+      for (i=0; i<HalDev->ChData[Ch].TxNumQueues; i++)
+        {
+         /* return outstanding buffers to OS                             +RC3.02*/
+         Curr = HalDev->TxActQueueHead[Ch][i];                     /*+GSG 030303*/
+         First = Curr;                                                 /*+GSG 030303*/
+         while (Curr)                                                  /*+GSG 030303*/
+           {                                                           /*+GSG 030303*/
+            /* Pop TCB(s) for packet from the stack */                 /*+GSG 030303*/
+            Last = Curr->Eop;                                          /*+GSG 030303*/
+            HalDev->TxActQueueHead[Ch][i] = Last->Next;            /*+GSG 030303*/
                                                                     /*+GSG 030303*/
-         /* return to OS */                                         /*+GSG 030303*/
-         HalDev->OsFunc->SendComplete(Curr->OsInfo);                /*+GSG 030303*/
+            /* return to OS */                                         /*+GSG 030303*/
+            HalDev->OsFunc->SendComplete(Curr->OsInfo);                /*+GSG 030303*/
                                                                     /*+GSG 030303*/
-         /* Push Tcb(s) back onto the stack */                      /*+GSG 030303*/
-         Curr = Last->Next;                                         /*+GSG 030303*/
-         Last->Next = HalDev->TcbPool[Ch][Queue];                   /*+GSG 030303*/
-         HalDev->TcbPool[Ch][Queue] = First;                        /*+GSG 030303*/
+            /* Push Tcb(s) back onto the stack */                      /*+GSG 030303*/
+            Curr = Last->Next;                                         /*+GSG 030303*/
+            Last->Next = HalDev->TcbPool[Ch][i];                   /*+GSG 030303*/
+            HalDev->TcbPool[Ch][i] = First;                        /*+GSG 030303*/
                                                                     /*+GSG 030303*/
-         /* set the first(SOP) pointer for the next packet */       /*+GSG 030303*/
-         First = Curr;                                              /*+GSG 030303*/
-    }                                                           /*+GSG 030303*/
+            /* set the first(SOP) pointer for the next packet */       /*+GSG 030303*/
+            First = Curr;                                              /*+GSG 030303*/
+           }                                                           /*+GSG 030303*/
+        }
 
       /* finish channel teardown */
 
-      /* save the OsInfo to pass to upper layer
-         THIS WAS CRASHING - because it's possible that I get the teardown
-     notification and the TcbHPool is null.  In this case, the buffers
-     to free can be found in the TxHActiveQueue.  If I need to get OsInfo
-     in the future, I can get it from one of those buffers.
-     OsInfo = HalDev->TcbHPool[Ch]->OsInfo; */
-
       if (HalDev->TxTeardownPending[Ch] & FULL_TEARDOWN)
         {
-     FreeTx(HalDev, Ch, Queue);
-    } /* if FULL teardown */
+         FreeTx(HalDev, Ch, 0);
 
-      /* bug fix - clear Tx channel pointers on teardown */
-      HalDev->TcbPool[Ch][Queue] = 0;
-      HalDev->TxActQueueHead[Ch][Queue]  = 0;
-      HalDev->TxActQueueCount[Ch][Queue] = 0;
-      HalDev->TxActive[Ch][Queue]        = FALSE;
+         if (HalDev->ChData[Ch].TxNumQueues == 2)
+           FreeTx(HalDev, Ch, 1);
+        } /* if FULL teardown */
 
-      /* write completion pointer */
+      /* perform all actions for both queues (+GSG 040212) */
+      for (i=0; i<HalDev->ChData[Ch].TxNumQueues; i++)
+        {
+         /* bug fix - clear Tx channel pointers on teardown */
+         HalDev->TcbPool[Ch][i] = 0;
+         HalDev->TxActQueueHead[Ch][i]  = 0;
+         HalDev->TxActQueueCount[Ch][i] = 0;
+         HalDev->TxActive[Ch][i]        = FALSE;
+        }
+
+      /* write completion pointer, only needed for the high priority queue */
       (*(pTXH_CPPI_COMP_PTR( base )+( Ch *64)+( Queue )))  = TEARDOWN_VAL;
 
       /* no longer pending teardown */
@@ -200,65 +204,71 @@ static int TxTeardownInt(HAL_DEVICE *HalDev, int Ch, int Queue)
 
       /* call OS Teardown Complete (if Rx is also done) */
       if ((HalDev->RxTeardownPending[Ch] & RX_TEARDOWN) == 0)
-    {
-     /* mark channel as closed */
-     HalDev->ChIsOpen[Ch][DIRECTION_RX] = 0;
+        {
+         /* mark channel as closed */
+         HalDev->ChIsOpen[Ch][DIRECTION_RX] = 0;
 
-     /* disable channel interrupt */
-     SAR_TX_MASK_CLR(HalDev->dev_base) = (1<<Ch);
+         /* disable channel interrupt */
+         SAR_TX_MASK_CLR(HalDev->dev_base) = (1<<Ch);
          SAR_TX_MASK_CLR(HalDev->dev_base) = (1<<(Ch+16)); /* +GSG 030307 */
-     SAR_RX_MASK_CLR(HalDev->dev_base) = (1<<Ch);
+         SAR_RX_MASK_CLR(HalDev->dev_base) = (1<<Ch);
 
-     /* Clear PDSP Channel State RAM */
-     pTmp = (pPDSP_BLOCK_0(HalDev->dev_base)+(Ch*64));
-     for (i=0; i<NUM_PDSP_AAL5_STATE_WORDS; i++)
-       *pTmp++ = 0;
+         /* Clear PDSP Channel State RAM */
+         pTmp = (pPDSP_BLOCK_0(HalDev->dev_base)+(Ch*64));
+         for (i=0; i<NUM_PDSP_AAL5_STATE_WORDS; i++)
+           *pTmp++ = 0;
 
-     if ((HalDev->TxTeardownPending[Ch] & BLOCKING_TEARDOWN) == 0)
-       {
+         if ((HalDev->TxTeardownPending[Ch] & BLOCKING_TEARDOWN) == 0)
+           {
 
-        HalDev->OsFunc->TeardownComplete(HalDev->OsDev, Ch, DIRECTION_TX|DIRECTION_RX);
-       }
+            HalDev->OsFunc->TeardownComplete(HalDev->OsDev, Ch, DIRECTION_TX|DIRECTION_RX);
+           }
 
-     /* clear all teardown pending information for this channel */
-     HalDev->RxTeardownPending[Ch] = 0;
-     HalDev->TxTeardownPending[Ch] = 0;
-    }
+         /* clear all teardown pending information for this channel */
+         HalDev->RxTeardownPending[Ch] = 0;
+         HalDev->TxTeardownPending[Ch] = 0;
+        }
 
       return (EC_NO_ERRORS);
      }
    return (-1);
   }
 
-/* +GSG 030421 */
+  /* +GSG 030421 */
 static void AddToRxQueue(HAL_DEVICE *HalDev, HAL_RCB *FirstRcb, HAL_RCB *LastRcb, int FragCount, int Ch)
   {
-   HAL_RCB *OldTailRcb;
-
-   if (HalDev->RxActQueueCount[Ch]==0)
+   if (HalDev->RxActQueueHead[Ch]==0)
      {
 
       HalDev->RxActQueueHead[Ch]=FirstRcb;
       HalDev->RxActQueueTail[Ch]=LastRcb;
-      HalDev->RxActQueueCount[Ch]=FragCount;
-      if ((!HalDev->InRxInt[Ch])&&(!HalDev->RxActive[Ch]))
+      if (!HalDev->RxActive[Ch])
         {
          /* write Rx Queue Head Descriptor Pointer */
-         (*(pRX_DMA_STATE_WORD_1( HalDev->dev_base )+( Ch *64)))  = VirtToPhys(FirstRcb) - HalDev->offset;
+         ((*(pRX_DMA_STATE_WORD_1(  HalDev->dev_base  )+(  Ch  *64))) )  = VirtToPhys(FirstRcb) - HalDev->offset;
          HalDev->RxActive[Ch]=TRUE;
         }
      }
     else
      {
-
+      register HAL_RCB *OldTailRcb;
+      register bit32u rmode;
+      
+      HalDev->OsFunc->CriticalOn();
       OldTailRcb=HalDev->RxActQueueTail[Ch];
       OldTailRcb->Next=(void *)FirstRcb;
-
-      /* Emerald fix 10/29 (Denis) */
-      *((bit32u *) VirtToVirtNoCache(&OldTailRcb->HNext))=VirtToPhys(FirstRcb) - HalDev->offset;
-
+      OldTailRcb=VirtToVirtNoCache(OldTailRcb);
+      OldTailRcb->HNext=VirtToPhys(FirstRcb) - HalDev->offset;
       HalDev->RxActQueueTail[Ch]=LastRcb;
-      HalDev->RxActQueueCount[Ch]+=FragCount;
+
+      rmode=OldTailRcb->mode;
+      if (rmode&CB_EOQ_BIT)
+        {
+        rmode&=~CB_EOQ_BIT;
+        ((*(pRX_DMA_STATE_WORD_1(  HalDev->dev_base  )+(  Ch  *64))) )  = VirtToPhys(FirstRcb) - HalDev->offset;
+        OldTailRcb->mode=rmode;
+        }   
+      HalDev->OsFunc->CriticalOff();
      }
   }
 
@@ -636,6 +646,8 @@ static int halSend(HAL_DEVICE *HalDev,FRAGLIST *FragList,
 
   HalDev->OsFunc->CriticalOn();
 
+  Mode = 0;
+
   tcb_ptr = head = HalDev->TcbPool[Ch][Queue];
 
   if (tcb_ptr)
@@ -757,11 +769,25 @@ static int halSend(HAL_DEVICE *HalDev,FRAGLIST *FragList,
        }
       else
        {
+	    register volatile HAL_TCB *pTailTcb;   
+        register bit32u tmode;
+        register bit32u pCurrentTcb;
+        
         HalDev->TxActQueueTail[Ch][Queue]->Next=head;
         /* Emerald fix 10/29 */
-        *((bit32u *) VirtToVirtNoCache(&HalDev->TxActQueueTail[Ch][Queue]->HNext))=VirtToPhys(head)  - HalDev->offset;
+        
+        pTailTcb=(HAL_TCB *)VirtToVirtNoCache(&HalDev->TxActQueueTail[Ch][Queue]->HNext);
+        pCurrentTcb=VirtToPhys(head)  - HalDev->offset;
+        pTailTcb->HNext=pCurrentTcb;
         HalDev->TxActQueueTail[Ch][Queue]=tcb_ptr;
-/*+GSG 030303*//*+GSG 030303*/
+/*+GSG 030303*/
+        tmode=pTailTcb->mode;  
+        if (tmode&CB_EOQ_BIT)
+          {
+           tmode&=~CB_EOQ_BIT;
+           pTailTcb->mode=tmode;
+           ((*(pTX_DMA_STATE_WORD_0( base )+( Ch *64)+( Queue ))) )  = pCurrentTcb;
+          }                                                             /*+GSG 030303*/
        }
      rc = EC_NO_ERRORS;
      goto ExitSend;
@@ -1002,7 +1028,7 @@ static int RxInt(HAL_DEVICE *HalDev, int Ch, int *MoreWork)
       OsFunc->Receive(HalDev->OsDev,HalDev->fraglist,FragIndex,RxPktLen,             /* ~GSG 030508 */
            (HAL_RECEIVEINFO *)SopRcb,mode);
       } /* else */
-    
+
     if (CurrentRcb)                                                                  /*MJH+030522*/
       {
        RxBufStatus=CurrentRcb->mode;
@@ -1083,11 +1109,9 @@ static int TxInt(HAL_DEVICE *HalDev, int Ch, int Queue, int *MoreWork)
 
   if (CurrentTcb==0)
     {
-     /* I saw this error a couple of times when multi-channels were added */
-     dbgPrintf("[cppi TxInt()]TxH int with no TCB in queue!\n");
-     dbgPrintf("              Ch=%d, CurrentTcb = 0x%08x\n", Ch, (bit32u)CurrentTcb);
-     dbgPrintf("              HalDev = 0x%08x\n", (bit32u)HalDev);
-     osfuncSioFlush();
+     /* This is a normal condition which occurs very infrequently, and is related
+        to the spurious SAR interrupts that are caused by a layout sensitivity on
+        Ohio 250.  */
      return(EC_CPPI|EC_FUNC_TXINT|EC_VAL_NULL_TCB);
     }
 
@@ -1117,22 +1141,58 @@ static int TxInt(HAL_DEVICE *HalDev, int Ch, int Queue, int *MoreWork)
 
       if (LastTcbProcessed->mode&CB_EOQ_BIT)
         {
-        if (LastTcbProcessed->Next)
-          {
-       /* Misqueued packet */
+         if (LastTcbProcessed->Next)
+           {
+            /* Misqueued packet */
 
-           HalDev->Stats.TxMisQCnt[Ch][Queue]++;
+            HalDev->Stats.TxMisQCnt[Ch][Queue]++;
 
-           (*(pTX_DMA_STATE_WORD_0( base )+( Ch *64)+( Queue )))  = LastTcbProcessed->HNext;
-          }
-         else
-          {
+            /* AAL5 Toss Loop.  This situation only occurs if the OS has triggered
+               AAL5's TxFlush feature, which zeroes the hardware forward pointer for
+               each packet that should be thrown away. */
+            if (LastTcbProcessed->HNext == 0)
+              {
+               while (CurrentTcb)
+                 {
+                  if ((LastTcbProcessed->Next != 0) && (LastTcbProcessed->HNext == 0))
+                    {
+                     /* toss the packet, return to OS */
+                     OsFunc->SendComplete(CurrentTcb->OsInfo);
+
+                     CurrentTcb = LastTcbProcessed->Next;
+                     LastTcbProcessed->Next=HalDev->TcbPool[Ch][Queue];
+                     HalDev->TcbPool[Ch][Queue]=FirstTcbProcessed;
+                    }
+                   else
+                    {
+                     break;
+                    }
+                  FirstTcbProcessed = CurrentTcb;
+                  LastTcbProcessed = CurrentTcb->Eop;
+                 }
+               HalDev->TxActQueueHead[Ch][Queue] = LastTcbProcessed->Next;
+              }
+
+            if (LastTcbProcessed->HNext != 0)
+              {
+
+               (*(pTX_DMA_STATE_WORD_0( base )+( Ch *64)+( Queue )))  = LastTcbProcessed->HNext;
+
+              }
+             else
+              {
+               HalDev->TxActive[Ch][Queue]=FALSE;
+              }
+
+           }
+          else
+           {
        /* Tx End of Queue */
 
-       HalDev->Stats.TxEOQCnt[Ch][Queue]++;
+            HalDev->Stats.TxEOQCnt[Ch][Queue]++;
 
-       HalDev->TxActive[Ch][Queue]=FALSE;
-          }
+            HalDev->TxActive[Ch][Queue]=FALSE;
+           }
         }
 
       OsFunc->SendComplete(CurrentTcb->OsInfo);
@@ -1151,7 +1211,7 @@ static int TxInt(HAL_DEVICE *HalDev, int Ch, int Queue, int *MoreWork)
       FirstTcbProcessed = CurrentTcb;
       if (CurrentTcb)
         {
-     osfuncDataCacheHitInvalidate((void *)CurrentTcb, 16);
+         osfuncDataCacheHitInvalidate((void *)CurrentTcb, 16);
          TxFrameStatus=CurrentTcb->mode;
         }
 
@@ -1165,9 +1225,9 @@ static int TxInt(HAL_DEVICE *HalDev, int Ch, int Queue, int *MoreWork)
           {
            osfuncDataCacheHitInvalidate(HalDev->TxActQueueHead[Ch][OtherQueue],16);
            if ((HalDev->TxActQueueHead[Ch][OtherQueue]->mode) & CB_OWNERSHIP_BIT)
-             { 
+             {
               HalDev->TurboDslErrors++;
-              (*(pTX_DMA_STATE_WORD_0( base )+( Ch *64)+( OtherQueue )))  = 
+              (*(pTX_DMA_STATE_WORD_0( base )+( Ch *64)+( OtherQueue )))  =
                 VirtToPhys(HalDev->TxActQueueHead[Ch][OtherQueue]);
              }
           }

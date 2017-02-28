@@ -1,0 +1,130 @@
+#define targets
+REL_DIR = rel3.3
+DRIVER_COPY = _3_3
+ifeq ($(NSP),3.2)
+REL_DIR = rel3.2
+DRIVER_COPY = _3_2
+endif
+ifeq ($(NSP),3.4)
+REL_DIR = rel3.4
+DRIVER_COPY = _3_4
+endif
+
+ifeq ($(ADIAG),1)
+CFLAGS += -DADIAG
+bin: tiadiag.o
+else
+ifndef ACT
+bin: tiatm.o
+else
+bin: tiatm_act.o
+endif
+endif
+#NSP_DIR = ../../../../../../gtrel/linux/$(REL_DIR)
+NSP_DIR = ../../../psp_linux
+INCLUDELINUX = $(NSP_DIR)/kernel/linux-2.4.17_mvl21/include/asm/gcc
+INCLUDEDIR = $(NSP_DIR)/kernel/linux-2.4.17_mvl21/include
+#INCLUDEMODVERSIONS = $(NSP_DIR)/kernel/linux-2.4.17_mvl21/include/linux/modversions.h
+
+CC		= mips_fp_le-gcc -I $(INCLUDELINUX)
+LD		= mips_fp_le-ld
+STRIP = mips_fp_le-strip
+
+
+ASFLAGS = -G 0 -mno-abicalls -fno-pic -mcpu=r4600 -mips2 -Wa,--trap -pipe -D__KERNEL__ -DMODULE \
+					-I$(INCLUDEDIR) -c
+
+CFLAGS = -D__KERNEL__ -DMODULE -DEL -I$(INCLUDEDIR) -I./ -Wall \
+				-Wstrict-prototypes -Wno-trigraphs -O3 -fomit-frame-pointer -fno-strict-aliasing -fno-common -mlong-calls \
+				-G 0 -mno-abicalls -fno-pic -mcpu=r4600 -mips2 -Wa,--trap -pipe 
+
+#CFLAGS += -DDEBUG_BUILD
+CFLAGS += -DPOST_SILICON -DCOMMON_NSP 
+CFLAGS += -DCONFIG_LED_MODULE
+#CFLAGS += -D__CPHAL_DEBUG -DDEBUG_BUILD
+#CFLAGS += -DMODVERSIONS -include $(INCLUDEMODVERSIONS)
+ifndef ACT
+CFLAGS += -DNO_ACT
+endif
+ifeq ($(ANNEX),B)
+COPY_FILE = ar0700db.bin
+NSP_IMAGE = snsp_b.img
+else
+ifeq ($(ANNEX),C)
+COPY_FILE = ar0700dc.bin
+NSP_IMAGE = snsp_c.img
+else
+COPY_FILE = ar0700mp.bin
+NSP_IMAGE = snsp_a.img
+endif
+endif
+
+
+VER = ver4.0.0.13
+PSP_FILE = psp_linux/$(VER)
+MK_TYPE = mksquashfs
+#MK_TYPE = mkcramfs
+
+OBJS = tiatm.o
+
+$(OBJS): tn7atm.o tn7dsl.o tn7sar.o dsl_hal_api.o dsl_hal_support.o cpsar.o aal5sar.o 
+	$(LD) -r -G 0 $^ -o $@
+	mips_fp_le-strip --strip-unneeded *.o
+	cp tiatm.o tiatm$(DRIVER_COPY)_o
+#	- cp tiatm.o $(NSP_DIR)/filesystem/lib/modules/2.4.17_mvl21-malta-mips_fp_le/kernel/drivers/atm/tiatm.o
+#	cp tiatm.o ../../../../$(PSP_FILE)/filesystem/lib/modules/tiatm.o
+#	cp ../../dslhal/bin/$(COPY_FILE) $(NSP_DIR)/filesystem/lib/modules/ar0700xx.bin
+#	cp pdsp_d.bin ../../../../gtrel/linux/rel3.0/filesystem/lib/modules/pdsp_d.bin
+#	rm -f $(NSP_DIR)/$(NSP_IMAGE)
+#	$(NSP_DIR)/tools/bin/$(MK_TYPE) $(NSP_DIR)/filesystem $(NSP_DIR)/$(NSP_IMAGE)
+#	../../../../$(PSP_FILE)/tools/bin/mkcramfs ../../../../$(PSP_FILE)/filesystem ../../../../psp_linux/spsp_$(VER).img
+
+tiadiag.o: tn7atm.o tn7dsl.o tn7sar.o dsl_hal_api.o dsl_hal_support.o cpsar.o aal5sar.o dsl_hal_diagnostics.o 
+	$(LD) -r -G 0 $^ -o $@
+	mips_fp_le-strip --strip-debug *.o
+tiatm_act.o: tn7atm.o tn7dsl.o tn7sar.o dsl_hal_api.o dsl_hal_support.o cpsar.o aal5sar.o dsl_hal_diagnostics.o dsl_hal_advcfg.o
+	$(LD) -r -G 0 $^ -o $@
+	mips_fp_le-strip --strip-debug *.o
+	cp tiatm_act.o tiatm_act$(DRIVER_COPY)_o
+
+.c.o:
+	$(CC) $(CFLAGS) -o $@ $<
+
+tn7atm.o: tn7atm.c
+	$(CC) $(CFLAGS) -c -o tn7atm.o tn7atm.c
+	$(CC) $(CFLAGS) -S -o tn7atm.lst tn7atm.c
+
+tn7dsl.o: tn7dsl.c
+	$(CC) $(CFLAGS) -c -o tn7dsl.o tn7dsl.c
+	$(CC) $(CFLAGS) -S -o tn7dsl.lst tn7dsl.c
+
+tn7sar.o: tn7sar.c
+	$(CC) $(CFLAGS) -c -o tn7sar.o tn7sar.c
+	$(CC) $(CFLAGS) -S -o tn7sar.lst tn7sar.c
+
+dsl_hal_support.o: dsl_hal_support.c
+	$(CC) $(CFLAGS) -c -o dsl_hal_support.o dsl_hal_support.c
+	$(CC) $(CFLAGS) -S -o dsl_hal_support.lst dsl_hal_support.c
+
+dsl_hal_api.o: dsl_hal_api.c
+	$(CC) $(CFLAGS) -c -o dsl_hal_api.o dsl_hal_api.c
+	$(CC) $(CFLAGS) -S -o dsl_hal_api.lst dsl_hal_api.c
+
+cpsar.o: cpsar.c
+	$(CC) $(CFLAGS) -c -o cpsar.o cpsar.c
+	$(CC) $(CFLAGS) -S -o cpsar.lst cpsar.c	
+
+aal5sar.o: aal5sar.c
+	$(CC) $(CFLAGS) -c -o aal5sar.o aal5sar.c
+	$(CC) $(CFLAGS) -S -o aal5sar.lst aal5sar.c	
+
+dsl_hal_diagnostics.o: dsl_hal_diagnostics.c
+	$(CC) $(CFLAGS) -c -o dsl_hal_diagnostics.o dsl_hal_diagnostics.c
+	$(CC) $(CFLAGS) -S -o dsl_hal_diagnostics.lst dsl_hal_diagnostics.c
+
+dsl_hal_advcfg.o: dsl_hal_advcfg.c
+	$(CC) $(CFLAGS) -c -o dsl_hal_advcfg.o dsl_hal_advcfg.c
+	$(CC) $(CFLAGS) -S -o dsl_hal_advcfg.lst dsl_hal_advcfg.c
+clean:
+	- rm *.o
+	- rm tiatm_3_3_o

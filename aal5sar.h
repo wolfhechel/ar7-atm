@@ -17,9 +17,9 @@
 #define _INC_AAL5SAR
 
 /** \namespace AAL5_Version
-This documents version 01.06.06 of the AAL5 CPHAL.
+This documents version 01.07.2c of the AAL5 CPHAL.
 */
-const char *pszVersion_CPAAL5="CPAAL5 01.06.06 "__DATE__" "__TIME__;
+const char *pszVersion_CPAAL5="CPAAL5 01.07.2c "__DATE__" "__TIME__;
 
 #include "cpsar_cpaal5.h"
 
@@ -43,7 +43,7 @@ const char *pszVersion_CPAAL5="CPAAL5 01.06.06 "__DATE__" "__TIME__;
 #define CFG_RX_BUF_OFFSET {0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0}
 #define CFG_TX_NUM_QUEUES {1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1}
 #define CFG_CPCS_UU       {0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0}
-#define CFG_DA_MASK       {0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0}
+#define CFG_DA_MASK       {1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1}
 #define CFG_PRIORITY      {0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0}
 #define CFG_PKT_TYPE      {0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0}
 #define CFG_VCI           {100,101,102,103,104,105,106,107, 108,109,110,111,112,113,114,115}

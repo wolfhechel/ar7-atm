@@ -1,13 +1,13 @@
 
 /**
- *  
+ *
  *  aal5sar.c
  *
  *  TNETDxxxx Software Support\n
  *  Copyright (c) 2002 Texas Instruments Incorporated. All Rights Reserved.
  *
  *  version
- *      28Feb02 Greg       1.00  Original Version created.\n 
+ *      28Feb02 Greg       1.00  Original Version created.\n
  *      06Mar02 Greg       1.01  Documentation (Doxygen-style) enhanced
  *      06May02 Greg       1.02  AAL2 added
  *      06Jun02 Greg       1.03  Multiple API and bug fixes from emulation
@@ -21,13 +21,11 @@ These are the CPHAL Functions.
 */
 
 /**
-@page CPHAL_Implementation_Details
-
-@section cphal_intro Introduction
+@page CPHAL_Implementation_Details Introduction
 
 The CPHAL API described above is generally applicable to all modules.  Any
 implementation differences will be described in the following module-specific
-appendix sections.  
+appendix sections.
 
 Included for your reference is a diagram showing the internal architecture
 of the CPHAL:
@@ -50,9 +48,7 @@ No additional functions currently defined.
 */
 
 /**
-@page VDMA_Implementation_Details
-
-@section vdma_intro Introduction
+@page VDMA_Implementation_Details Introduction
 
 The VDMA-VT module facilitates efficient transfer of data (especially voice)
 between two devices, as shown in the figure below.
@@ -76,7 +72,7 @@ Correspondingly, the correct value for the @c Ch parameter in @c ChannelTeardown
 always 0.  Further, when calling @c Send(), the driver should always supply the value
 of 0 for both the @c Ch and @c Queue parameters.
 
-For the VDMA-VT, configuring the channel requires the configuration of either 2 FIFO 
+For the VDMA-VT, configuring the channel requires the configuration of either 2 FIFO
 elements (in credit mode) or 4 FIFO elements (in mirror mode).  For credit mode, the
 driver must configure just the local Tx and Rx FIFOs.  For mirror mode, the driver must
 configure the Tx and Rx FIFOs for both the remote and local ends of the interface.
@@ -94,7 +90,7 @@ structure.  The members of VDMA-VT's CHANNEL_INFO structure are defined below.
 - int RemAddr;     Used only in credit mode.  This is the base address of the remote
                    remote VDMA-based device (VDMA-VT or AAL2)
 - int RemDevID;    Used only in credit mode.  Identifies the type of remote VDMA-based device.
-                   0=VDMAVT, 1=AAL2 Ch0, 2=AAL2 Ch1, 3=AAL2 Ch2, 4= AAL2 Ch3.       
+                   0=VDMAVT, 1=AAL2 Ch0, 2=AAL2 Ch1, 3=AAL2 Ch2, 4= AAL2 Ch3.
 
 For the VDMA-VT module, the driver must make all calls to @c ChannelSetup() prior to calling
 @c Open().  This is because several of the channel specific parameters may not be changed
@@ -129,7 +125,7 @@ call.
 
 If your system configuration does not utilize VDMA interrupts, the ability to process the
 Tx and Rx FIFOs is supported.  To process the Tx FIFO, call @c CheckTx().  If the CPHAL is
-able to process any complete data transmissions, it will call @c SendComplete() as usual.  
+able to process any complete data transmissions, it will call @c SendComplete() as usual.
 To process the Rx FIFO, call @c CheckRx().  If the CPHAL has received any data, it will
 call @c Receive() to pass the driver the data.  Please reference @ref VDMA_Functions for more
 information on these interfaces.
@@ -142,141 +138,146 @@ and @c StatsClear().
 */
 
 /**
-@page AAL5_Implementation_Details
-
-@section aal5_ver Version
+@page AAL5_Implementation_Details Version
 
 @copydoc AAL5_Version
+*/
 
-@section aal5_intro Introduction
+/**
+@page aal5_intro Introduction
 
 The AAL5 implementation will support 16 channels for transmit and 16 channels for
 receive.  Each of the transmit channels may have up to two transmit queues
 associated with it.  If two queues are used, Queue 0 is the high priority queue,
 and Queue 1 is the low priority queue.
+*/
 
-@section aal5_params AAL5 Configuration Parameters
+/**
+@page aal5_params AAL5 Configuration Parameters
 
 AAL5 requires two device entries to be available in the configuration repository, named
 @p "aal5" and @p "sar".  The @p aal5 device entry must contain @p base (base address)
-and @p int_line (interrupt number). The @p sar device entry must have both @p base 
+and @p int_line (interrupt number). The @p sar device entry must have both @p base
 (base address) and @p reset_bit (reset bit).
 
 @par Device Level Configuration Parameters
 
 The following parameters are device-level parameters, which apply across all
 channels.  The value for these parameters may be modified by changing the value in the
-configuration repository.  
+configuration repository.
 
-- "UniNni":  
+- "UniNni":
 AAL5 network setting. 0 = UNI (default), 1 = NNI.
 
 @par Channel Configuration Parameters
 
 All AAL5 channel parameters may also be configured through the @c ChannelSetup() interface.
-Following is the list of @p CHANNEL_INFO members that may be modified by the driver when 
-calling @c ChannelSetup().  The driver may provide a value of 0xFFFFFFFF for any channel 
-parameter to select a default value for the parameter.  The driver should at a minimum 
+Following is the list of @p CHANNEL_INFO members that may be modified by the driver when
+calling @c ChannelSetup().  The driver may provide a value of 0xFFFFFFFF for any channel
+parameter to select a default value for the parameter.  The driver should at a minimum
 configure @p Vci and @p Vpi.  The usage of all parameters beginning with TxVc_,
 TxVp_, RxVc_, RxVp_ is described in greater detail in the SAR Firmware Spec.
 These parameters are mainly associated with QoS and OAM functionality.
 
-- "RxNumBuffers":    
-The number of Rx buffer descriptors to allocate for Ch.  
-- "RxBufSize":         
+- "RxNumBuffers":
+The number of Rx buffer descriptors to allocate for Ch.
+- "RxBufSize":
 Size (in bytes) for each Rx buffer.
-- "RxBufferOffset":   
+- "RxBufferOffset":
 Number of bytes to offset rx data from start of buffer (must be less than buffer size).
-- "RxServiceMax":    
+- "RxServiceMax":
 Maximum number of packets to service at one time.
-- "TxNumBuffers":      
+- "TxNumBuffers":
 The number of Tx buffer descriptors to allocate for Ch.
-- "TxNumQueues":        
-Number of Tx queues for this channel (1-2). Choosing 2 enables a low priority SAR queue. 
-- "TxServiceMax":       
-Maximum number of packets to service at one time. 
-- "CpcsUU":         
+- "TxNumQueues":
+Number of Tx queues for this channel (1-2). Choosing 2 enables a low priority SAR queue.
+- "TxServiceMax":
+Maximum number of packets to service at one time.
+- "CpcsUU":
 The 2-byte CPCS UU and CPI information.
-- "Gfc":    
+- "Gfc":
 Generic Flow Control.  Used in ATM header of Tx packets.
-- "Clp":   
+- "Clp":
 Cell Loss Priority.  Used in ATM header of Tx packets.
-- "Pti":   
+- "Pti":
 Payload Type Indication.  Used in ATM header of Tx packets.
-- "DaMask":           
-Specifies whether credit issuance is paused when Tx data not available.
-- "Priority":   
+- "DaMask":
+Specifies whether credit issuance is paused when Tx data not available. The default value is 1,
+and this value should NOT be changed unless you have a complete understand of the outcome.  When set to 0, CBR and VBR channels will not exhibit the desired functionality.
+- "Priority":
 Priority bin this channel will be scheduled within.
-- "PktType":   
+- "PktType":
 0=AAL5,1=Null AAL,2=OAM,3=Transparent,4=AAL2.
-- "Vci":                
+- "Vci":
 Virtual Channel Identifier.
-- "Vpi":                 
+- "Vpi":
 Virtual Path Identifier.
 - "TxVc_AtmHeader":
 In firmware OAM mode, this
 is the ATM header to be appended to front of firmware generated VC OAM cells for
-this channel.  Note: To generate host OAM cells, call @c Send() with 
+this channel.  Note: To generate host OAM cells, call @c Send() with
 the appropriate mode.
-- "TxVc_CellRate":       
+- "TxVc_CellRate":
 Tx rate, set as clock ticks between transmissions (SCR for VBR, CBR for CBR).
-- "TxVc_QosType":        
+- "TxVc_QosType":
 0=CBR,1=VBR,2=UBR,3=UBRmcr.
-- "TxVc_Mbs":            
+- "TxVc_Mbs":
 Min Burst Size in cells.
-- "TxVc_Pcr":            
+- "TxVc_Pcr":
 Peak Cell Rate for VBR in clock ticks between transmissions.
-- "TxVc_OamTc":   
+- "TxVc_OamTc":
 TC Path to transmit OAM cells for TX connections (0,1).
-- "TxVc_VpOffset":   
+- "TxVc_VpOffset":
 Offset to the OAM VP state table for TX connections.  Channels with the same
 VPI must have the same VpOffset value.  Channels with different VPIs
 must have unique VpOffset values.
-- "RxVc_OamCh":   
+- "RxVc_OamCh":
 Channel to which to terminate received OAM cells to be forwarded to the Host
 for either Host OAM mode, or when RxVc_OamToHost is enabled during Firmware
 OAM mode.
-- "RxVc_OamToHost":   
+- "RxVc_OamToHost":
 Indicates whether to pass received unmatched OAM loopback cells to the host;
 0=do not pass, 1=pass.
-- "RxVc_AtmHeader":   
-ATM Header placed on firmware gen'd OAM cells for this channel on a Rx 
+- "RxVc_AtmHeader":
+ATM Header placed on firmware gen'd OAM cells for this channel on a Rx
 connection (must be big endian with 0 PTI).
-- "RxVc_OamTc":   
+- "RxVc_OamTc":
 TC Path to transmit OAM cells for RX connections (0,1).
-- "RxVc_VpOffset":   
+- "RxVc_VpOffset":
 Offset to the OAM VP state table for RX connections.  Channels with the same
 VPI must have the same VpOffset value.  Channels with different VPIs
 must have unique VpOffset values.
-- "TxVp_OamTc":   
+- "TxVp_OamTc":
 TC Path to transmit OAM cells for TX VP connections (0,1).
-- "TxVp_AtmHeader":   
+- "TxVp_AtmHeader":
 ATM Header placed on firmware gen'd VP OAM cells for this channel on a Tx VP
 connection (must be big endian with 0 VCI).
-- "RxVp_OamCh":   
+- "RxVp_OamCh":
 Channel to which to terminate received OAM cells to be forwarded to the Host
 for either Host OAM mode, or when RxVc_OamToHost is enabled during Firmware
 OAM mode.
-- "RxVp_OamToHost":   
+- "RxVp_OamToHost":
 Indicates whether to pass received unmatched OAM loopback cells to the host;
 0=do not pass, 1=pass.
 - "RxVp_AtmHeader":
 In firmware OAM mode, this
 is the ATM header to be appended to front of firmware generated VP OAM cells for
-this channel.  Note: To generate host OAM cells, call @c Send() with 
+this channel.  Note: To generate host OAM cells, call @c Send() with
 the appropriate mode.
-- "RxVp_OamTc":   
+- "RxVp_OamTc":
 TC Path to transmit OAM cells for RX VP connections (0,1).
-- "RxVp_OamVcList":   
+- "RxVp_OamVcList":
 This 32-bit field is one-hot encoded to indicate all the VC channels that are
 associated with this VP channel.  A value of 21 will indicate that VC
 channels 0, 2, and 4 are associated with this VP channel.
 - "FwdUnkVc":
-Indicates whether or not to forward unknown VCI/VPI cells to the host.  This 
+Indicates whether or not to forward unknown VCI/VPI cells to the host.  This
 parameter only takes effect if the channel's PktType is Transparent(3).
 1=forwarding enabled, 0=forwarding disabled.
+*/
 
-@section aal5_details API Implementation Details
+/**
+@page aal5_details API Implementation Details
 
 ATTENTION: Documentation given here supplements the documentation given in the general
 CPHAL API section.  The following details are crucial to correct usage of the
@@ -285,10 +286,10 @@ AAL5 CPHAL.
 @par Receive()
 The least significant byte of @p Mode contains the channel number.  Bit 31
 indicates whether or not the ATM header is present in the first fragment of
-the packet.  If bit 31 is set, the 4 byte ATM header (minus HEC) will be provided 
+the packet.  If bit 31 is set, the 4 byte ATM header (minus HEC) will be provided
 in the first fragment, with the payload beginning in the second fragment.  Currently,
 this is the default behavior for host OAM and transparent mode packets.
-Bits 17-16 indicate the packet type that is being received.  
+Bits 17-16 indicate the packet type that is being received.
 Mode Parameter Breakdown: <BR>
 - 31     ATM Header In First Fragment (1=true, 0=false) <BR>
 - 30-18  Unused. <BR>
@@ -301,8 +302,8 @@ Mode Parameter Breakdown: <BR>
 - 07-00  Channel Number.
 
 @par Send()
-The most significant 16 bits of the first fragment 'len' is used as the Offset 
-to be added to the packet.  @c Send() will reserve this many bytes at the 
+The most significant 16 bits of the first fragment 'len' is used as the Offset
+to be added to the packet.  @c Send() will reserve this many bytes at the
 beginning of the transmit buffer prior to the first byte of valid data.
 For the @p Mode parameter, Bit 31 must be set if the user has sent a packet with
 the ATM Header (minus HEC) embedded in the first 4 bytes of the first fragment data buffer.
@@ -311,9 +312,9 @@ or concatenating the ATM Header in front of the data payload.
 If Bit 31 is set, the ATM Header in the buffer is preserved and sent with
 each cell of the packet.  Otherwise, Send() will build the ATM header based on the
 values of the Pti, Gfc, Clp, Vpi, and Vci parameters for the given channel.
-Bits 17-16 are defined as the packet type.  Bits 15-08 may be used to specify the 
-transmit queue to send the packet on.  Only values 0 (high priority) and 1 (low 
-priority) are accepted.  Bits 07-00 should be used to indicate the channel number 
+Bits 17-16 are defined as the packet type.  Bits 15-08 may be used to specify the
+transmit queue to send the packet on.  Only values 0 (high priority) and 1 (low
+priority) are accepted.  Bits 07-00 should be used to indicate the channel number
 for the @c Send() operation.  Valid channel numbers are 0-15.
 Mode Parameter Breakdown: <BR>
 - 31     ATM Header In Packet (1=true, 0=false) <BR>
@@ -325,7 +326,7 @@ Mode Parameter Breakdown: <BR>
   -   3=Transparent <BR>
 - 15-08  Transmit Queue. <BR>
 - 07-00  Channel Number.
-  
+
 @par ChannelSetup()
 The AAL5 @c ChannelSetup() always configures both the Tx and Rx side of the channel
 connection in the same call.
@@ -343,7 +344,7 @@ command.
 Defined keys and actions.  Unless otherwise stated, the data type
 for Value is pointer to unsigned integer.  The list is broken into
 three groups, one group which can be used anytime, one group that should
-be used before halOpen(), and one group which can only be used after 
+be used before halOpen(), and one group which can only be used after
 halOpen() (but before halClose()).  For channelized parameters, replace
 'Ch' with the integer number of a channel (ex. "Gfc.4" can be used to set
 Gfc for channel 4).
@@ -362,13 +363,13 @@ the Pti in each Tx ATM header for this channel to take on the new Pti value.
 - "CpcsUU.Ch".  The OS may "Set" this value.  Changing this value causes
 the CpcsUU in each Tx ATM header for this channel to take on the new CpcsUU value.
 
-- "OamMode".  Specifies if host or firmware is performing OAM functions; 0 = Host OAM, 
+- "OamMode".  Specifies if host or firmware is performing OAM functions; 0 = Host OAM,
 1 = Firmware OAM.  When set, all SAR channels will be configured for
 the selection, including AAL2 channels.
 
 - "OamLbTimeout".  Specifies the firmware OAM loopback timeout, in milliseconds.
 
-- "DeviceCPID".  The OS may "Set" this value.  This is the OAM connection 
+- "DeviceCPID".  The OS may "Set" this value.  This is the OAM connection
 point identifier.  The OS should provide a pointer to an array of 4 32-bit
 integers.  Each word must be configured in big endian format.
 
@@ -387,16 +388,16 @@ number of fragments that can be received by the AAL5 Rx port.  The default
 value for AAL5 is 46.  This provides enough space to receive a maximum
 length AAL5 packet (65,568 bytes) with the default buffer size of 1518 bytes, and
 any amount of RxBufferOffset.  If the buffer size is configured to be smaller,
-the OS *MUST* modify this parameter according to the following formula: 
+the OS *MUST* modify this parameter according to the following formula:
 ((System Max AAL5 packet length)/(RxBufSize)) + 2.  (The extra two fragments in
 the formula allow for RxBufferOffset and one fragment for the ATM Header, used
 when receiving host OAM or transparent mode packets)
 
 MAY USE ONLY AFTER HAL IS 'OPEN' (after halOpen() call):
-- "Stats;Level;Ch;Queue".  The OS may "Get" Stats groups with this key, where 
+- "Stats;Level;Ch;Queue".  The OS may "Get" Stats groups with this key, where
 'Level' is an integer from 0-4, Ch is an integer from 0-15, and Queue is
 an integer from 0-1.  Note that Ch is not required for Level 4 stats, and Queue
-is not required for Level 0, 3, and 4.  The statistics functionality and return 
+is not required for Level 0, 3, and 4.  The statistics functionality and return
 value is described in the appendix entitled "Configuration and Control".
 
 - "TxVc_CellRate.Ch".  The OS may "Set" this value.  Can be used to modify
@@ -412,7 +413,7 @@ Pcr for a channel on the fly.
 Value 1 enables to PDSP.
 
 - "DeviceCPID".  The OS may "Set" this value.  The Value should be an array
-of 4 32-bit integers that comprise the CPID.  
+of 4 32-bit integers that comprise the CPID.
 
 - "RxVc_RDICount.Ch".  The OS may "Get" or "Set" this value.  Get returns
 the current RDI count for the VC channel.  Set clears the counter, and the Value
@@ -434,12 +435,12 @@ AIS end-to-end error for the VC channel.
 - "RxVp_AISetoe.Ch". The OS may "Get" this value.  This is an indication of
 AIS end-to-end error for the VP channel.
 
-- "RxVc_OamCh.Ch". The OS may "Set" this value.  Channel to which to terminate 
-received OAM cells to be forwarded to the Host for either Host OAM mode, or when 
+- "RxVc_OamCh.Ch". The OS may "Set" this value.  Channel to which to terminate
+received OAM cells to be forwarded to the Host for either Host OAM mode, or when
 RxVc_OamToHost is enabled during Firmware OAM mode.
 
-- "RxVp_OamCh.Ch". The OS may "Set" this value.  Channel to which to terminate 
-received OAM cells to be forwarded to the Host for either Host OAM mode, or when 
+- "RxVp_OamCh.Ch". The OS may "Set" this value.  Channel to which to terminate
+received OAM cells to be forwarded to the Host for either Host OAM mode, or when
 RxVp_OamToHost is enabled during Firmware OAM mode.
 
 - "F4_LB_Counter". The OS may "Get" this value.  This is a count of the number
@@ -452,19 +453,28 @@ RxVp_OamToHost is enabled during Firmware OAM mode.
 is the ATM header to be appended to front of firmware generated VC OAM cells for
 this channel.  In host OAM mode, this is used as the ATM header to be appended
 to front of host generated VC OAM cells for this channel.  It must be configured
-as big endian with PTI=0.  Note: To generate host OAM cells, call @c Send() with 
+as big endian with PTI=0.  Note: To generate host OAM cells, call @c Send() with
 the appropriate mode.
 
 - "TxVp_AtmHeader.Ch". The OS may "Set" this value.  In firmware OAM mode, this
 is the ATM header to be appended to front of firmware generated VP OAM cells for
 this channel.  In host OAM mode, this is used as the ATM header to be appended
 to front of host generated VP OAM cells for this channel.  It must be configured
-as big endian with VCI=0.  Note: To generate host OAM cells, call @c Send() with 
+as big endian with VCI=0.  Note: To generate host OAM cells, call @c Send() with
 the appropriate mode.
 
-- "PdspEnable".  The OS may "Set" this value. Controls whether or not the PDSP is 
-allowed to fetch new instructions.  The PDSP is enabled by the CPHAL during Open(), 
+- "PdspEnable".  The OS may "Set" this value. Controls whether or not the PDSP is
+allowed to fetch new instructions.  The PDSP is enabled by the CPHAL during Open(),
 and disabled during Close().  0 = disabled, 1 = enabled.
+
+- "TxFlush".  The OS may "Set" this value.   This may be used to flush all or part
+of a given transmit queue on a given channel.  The Value parameter is treated as
+a pointer to an unsigned int.  The unsigned int should be broken into fields as
+follows: bits 31-16 = NumToKeep, bits 15-8 = Queue, bits 7-0 = Channel.  "NumToKeep"
+is the number of currently queued packets to allow, the rest will be flushed.
+"Queue" selects the high or low priority queue for the channel, 0=high priority,
+1=low priority.  The number of packets flushed is returned through the Control()
+call.
 
 @par Control() (OS version)
 Defined keys and actions:
@@ -479,19 +489,21 @@ The OS must place the firmware size in the memory pointed at by @p Value.
 - "OamLbResult".  When a channel that is in firmware OAM mode is commanded to perform
 a loopback function, the result of the loopback generates an interrupt that is handled
 by the OS like any other interrupt.  The CPHAL, upon servicing the interrupt, will call
-osControl with this key, and an action of "Set".  The @p Value parameter will be a 
+osControl with this key, and an action of "Set".  The @p Value parameter will be a
 pointer to the integer result.  1 = pass, 0 = fail.
 
 - "SarFreq". The CPHAL will perform a "Get" action for this key.  The OS should place
 the SAR frequency (in Hz) in the memory pointed at by @p Value.
+*/
 
-@section aal5_stats AAL5 Specific Statistics
+/**
+@page aal5_stats AAL5 Specific Statistics
 
 Statistics level '0' contains all AAL5 specific statistics.  The following values will
 be obtained when requesting stats level 0:
 
 - "Crc Errors".  Number of CRC errors reported by SAR hardware.  Incremented for received
-packets that contain CRC errors.  
+packets that contain CRC errors.
 
 - "Len Errors".  Number of length errors reported by SAR hardware.  Incremented for received
 packets that are in excess of 1366 cells.
@@ -502,10 +514,10 @@ packets that are in excess of 1366 cells.
 when a part or all of a buffer cannot be received due to lack of RX buffer resources.  The SAR
 drops all cells associated with the packet for each buffer starvation error that occurs.
 
-*/ 
+*/
 
 /* register files */
-#include "cp_sar_reg.h"  
+#include "cp_sar_reg.h"
 
 #define _CPHAL_AAL5
 #define _CPHAL
@@ -531,17 +543,17 @@ typedef struct hal_private HAL_RECEIVEINFO;
 #include "cpswhal_cpaal5.h"
 #include "aal5sar.h"
 #include "cpcommon_cpaal5.c"
-    
+
 #define CR_SERVICE            (170-1)
 #define UTOPIA_PAUSE_REG      (*(volatile bit32u *)0xa4000000)
 
-/* 
+/*
 these masks are for the mode parameter used in halSend/OsReceive
 (may move these elsewhere)
 */
 #define CH_MASK            0xff
-#define PRI_MASK           0x10000 
-  
+#define PRI_MASK           0x10000
+
 /* Rcb/Tcb Constants */
 #define CB_SOF_BIT         (1<<31)
 #define CB_EOF_BIT         (1<<30)
@@ -584,17 +596,17 @@ these masks are for the mode parameter used in halSend/OsReceive
  *  @param  vci  Virtual Channel Identifier.
  *
  *  @return  A properly formatted ATM header, without the HEC.
- */ 
+ */
 static int atmheader(int gfc, int vpi, int vci, int pti, int clp)
   {
    int itmp;
 
    itmp=0;
-  
+
    /* UNI Mode uses the GFC field */
    itmp |= ((gfc & 0xF) << 28);
    itmp |= ((vpi & 0xFF) << 20);
-    
+
    /* if NNI Mode, no gfc and larger VPI */
    /*itmp |= ((vpi & 0xFFF) << 20);*/
 
@@ -663,7 +675,7 @@ static int StatsClear(HAL_DEVICE *HalDev)
 /*
  *  Returns statistics information.
  *
- *  @param  HalDev   CPHAL module instance. (set by xxxInitModule())  
+ *  @param  HalDev   CPHAL module instance. (set by xxxInitModule())
  *
  *  @return 0
  */
@@ -693,12 +705,12 @@ static STAT_INFO* StatsGet(HAL_DEVICE *HalDev)
    DispChStat(HalDev, "TxH MisQ Cnt",&MyStats->TxMisQCnt[0][0],2);
    DispChStat(HalDev, "TxL MisQ Cnt",&MyStats->TxMisQCnt[0][1],2);
    DispChStat(HalDev, "Rx MisQ Cnt",&MyStats->RxMisQCnt[0],1);
-   DispChStat(HalDev, "Rx EOQ Cnt",&MyStats->RxEOQCnt[0],1); 
+   DispChStat(HalDev, "Rx EOQ Cnt",&MyStats->RxEOQCnt[0],1);
    DispChStat(HalDev, "TxH EOQ Cnt",&MyStats->TxEOQCnt[0][0],2);
    DispChStat(HalDev, "TxL EOQ Cnt",&MyStats->TxEOQCnt[0][1],2);
    DispChStat(HalDev, "Rx Pkts",&MyStats->RxPacketsServiced[0],1);
    DispChStat(HalDev, "TxH Pkts",&MyStats->TxPacketsServiced[0][0],2);
-   DispChStat(HalDev, "TxL Pkts",&MyStats->TxPacketsServiced[0][1],2); 
+   DispChStat(HalDev, "TxL Pkts",&MyStats->TxPacketsServiced[0][1],2);
 
    return (&HalDev->Stats);
   }
@@ -709,27 +721,27 @@ void dbgChannelConfigDump(HAL_DEVICE *HalDev, int Ch)
   {
    CHANNEL_INFO *HalCh = &HalDev->ChData[Ch];
    dbgPrintf("  [aal5 Inst %d, Ch %d] Config Dump:\n", HalDev->Inst, Ch);
-   dbgPrintf("    TxNumBuffers  :%08d, TxNumQueues :%08d\n", 
+   dbgPrintf("    TxNumBuffers  :%08d, TxNumQueues :%08d\n",
              HalCh->TxNumBuffers, HalCh->TxNumQueues);
-   dbgPrintf("    RxNumBuffers  :%08d, RxBufSize   :%08d\n", 
+   dbgPrintf("    RxNumBuffers  :%08d, RxBufSize   :%08d\n",
              HalCh->RxNumBuffers, HalCh->RxBufSize);
-   dbgPrintf("    TxServiceMax  :%08d, RxServiceMax:%08d\n", 
+   dbgPrintf("    TxServiceMax  :%08d, RxServiceMax:%08d\n",
              HalCh->TxServiceMax, HalCh->RxServiceMax);
-   dbgPrintf("    RxBufferOffset:%08d, DaMask      :%08d\n", 
+   dbgPrintf("    RxBufferOffset:%08d, DaMask      :%08d\n",
              HalCh->RxBufferOffset, HalCh->DaMask);
-   dbgPrintf("    CpcsUU        :%08d, Gfc         :%08d\n", 
+   dbgPrintf("    CpcsUU        :%08d, Gfc         :%08d\n",
              HalCh->CpcsUU, HalCh->Gfc);
-   dbgPrintf("    Clp           :%08d, Pti         :%08d\n", 
+   dbgPrintf("    Clp           :%08d, Pti         :%08d\n",
              HalCh->Clp, HalCh->Pti);
-   dbgPrintf("    Priority      :%08d, PktType     :%08d\n", 
+   dbgPrintf("    Priority      :%08d, PktType     :%08d\n",
              HalCh->Priority, HalCh->PktType);
-   dbgPrintf("    Vci           :%08d, Vpi         :%08d\n", 
+   dbgPrintf("    Vci           :%08d, Vpi         :%08d\n",
              HalCh->Vci, HalCh->Vpi);
-   dbgPrintf("    TxVc_CellRate :%08d, TxVc_QosType:%08d\n", 
+   dbgPrintf("    TxVc_CellRate :%08d, TxVc_QosType:%08d\n",
              HalCh->TxVc_CellRate, HalCh->TxVc_QosType);
-   dbgPrintf("    TxVc_Mbs      :%08d, TxVc_Pcr    :%08d\n", 
+   dbgPrintf("    TxVc_Mbs      :%08d, TxVc_Pcr    :%08d\n",
              HalCh->TxVc_Mbs, HalCh->TxVc_Pcr);
-   dbgPrintf("    TxVc_AtmHeader:%08d\n", 
+   dbgPrintf("    TxVc_AtmHeader:%08d\n",
              HalCh->TxVc_AtmHeader);
    osfuncSioFlush();
   }
@@ -768,7 +780,7 @@ static int ChannelConfigGet(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
 
    Ret=OsFunc->DeviceFindParmUint(ChInfo, "TxServiceMax", &Value);
    if (!Ret) HalDev->ChData[Ch].TxServiceMax = Value;
-   
+
    Ret=OsFunc->DeviceFindParmUint(ChInfo, "RxNumBuffers", &Value);
    if (!Ret) HalDev->ChData[Ch].RxNumBuffers = Value;
 
@@ -851,7 +863,7 @@ static int ChannelConfigApply(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
      }
 
    HalDev->InRxInt[Ch]=FALSE;
-  
+
    /* Initialize Queue Data */
    HalDev->RxActQueueHead[Ch]=0;
    HalDev->RxActQueueCount[Ch]=0;
@@ -866,8 +878,8 @@ static int ChannelConfigApply(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
    /* Clear Rx State RAM */
    pTmp = pRX_DMA_STATE_WORD_0(HalDev->dev_base) + (Ch*64);
    for (j=0; j<NUM_RX_STATE_WORDS; j++)
-     *pTmp++ = 0; 
-     
+     *pTmp++ = 0;
+
    /* Check that Rx DMA State RAM was cleared */
    pTmp -= NUM_RX_STATE_WORDS;
    for (j=0; j<NUM_RX_STATE_WORDS; j++)
@@ -875,14 +887,14 @@ static int ChannelConfigApply(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
       if (*pTmp++ != 0)
         {
          return(EC_AAL5|EC_FUNC_CHSETUP|EC_VAL_RX_STATE_RAM_NOT_CLEARED);
-        }    
-     } 
- 
+        }
+     }
+
    /* Clear Tx State RAM */
    pTmp = pTX_DMA_STATE_WORD_0(HalDev->dev_base) + (Ch*64);
    for (j=0; j<NUM_TX_STATE_WORDS; j++)
-     *pTmp++ = 0; 
-     
+     *pTmp++ = 0;
+
    /* Check that Tx DMA State RAM was cleared */
    pTmp -= NUM_TX_STATE_WORDS;
    for (j=0; j<NUM_TX_STATE_WORDS; j++)
@@ -892,9 +904,9 @@ static int ChannelConfigApply(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
          return(EC_AAL5|EC_FUNC_CHSETUP|EC_VAL_TX_STATE_RAM_NOT_CLEARED);
         }
      }
-  
+
    /* Initialize Tx State RAM (Nothing to do) */
-   
+
    /* Initialize Rx State RAM */
    /* Configure the Rx buffer offset */
    pTmp=(pRX_DMA_STATE_WORD_0(HalDev->dev_base) + (Ch*64));
@@ -934,7 +946,7 @@ static int ChannelConfigApply(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
 static void ChannelConfigInit(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
   {
    int Ch = HalChn->Channel;
-   
+
 #ifdef __CPHAL_DEBUG
    if (DBG(0))
      {
@@ -949,7 +961,7 @@ static void ChannelConfigInit(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
    HalDev->ChData[Ch].RxNumBuffers   = cfg_rx_num_bufs[Ch];
    HalDev->ChData[Ch].RxBufSize      = cfg_rx_buf_size[Ch];
    HalDev->ChData[Ch].RxBufferOffset = cfg_rx_buf_offset[Ch];
-   HalDev->ChData[Ch].TxNumQueues    = cfg_tx_num_queues[Ch]; 
+   HalDev->ChData[Ch].TxNumQueues    = cfg_tx_num_queues[Ch];
    HalDev->ChData[Ch].CpcsUU         = cfg_cpcs_uu[Ch];
    HalDev->ChData[Ch].DaMask         = cfg_da_mask[Ch];
    HalDev->ChData[Ch].Priority       = cfg_priority[Ch];
@@ -967,10 +979,10 @@ static void ChannelConfigInit(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
    HalDev->ChData[Ch].TxServiceMax   = cfg_tx_max_service[Ch];
   }
 
-/* 
+/*
  * Update per channel data in the HalDev based channel structure.
  * If a certain channel parameter has been passed with the HAL_DEFAULT
- * value (0xFFFFFFFF), then do not copy it. 
+ * value (0xFFFFFFFF), then do not copy it.
  */
 static void ChannelConfigUpdate(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
   {
@@ -1038,8 +1050,8 @@ static void ChannelConfigUpdate(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
  * given member.  The @p OsSetup parameter is a pointer to an OS defined
  * data structure.  If the CPHAL later calls @c MallocRxBuffer(), this pointer
  * is returned in that call.
- *  
- * @param   HalDev  CPHAL module instance. (set by xxxInitModule())   
+ *
+ * @param   HalDev  CPHAL module instance. (set by xxxInitModule())
  * @param   HalCh   Per channel information structure.  Implementation specific.
  * @param   OsSetup Pointer to an OS-defined data structure.
  *
@@ -1059,7 +1071,7 @@ static void ChannelConfigUpdate(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
 static int halChannelSetup(HAL_DEVICE *HalDev, CHANNEL_INFO *HalCh, OS_SETUP *OsSetup)
   {
   int Ch, Ret;
-   
+
 #ifdef __CPHAL_DEBUG
    if (DBG(0))
      {
@@ -1102,15 +1114,15 @@ static int halChannelSetup(HAL_DEVICE *HalDev, CHANNEL_INFO *HalCh, OS_SETUP *Os
 
       /* setup HAL default values for this channel first */
       ChannelConfigInit(HalDev, HalCh);
- 
+
       /* retrieve options.conf channel parameters */
       /* currently ignoring return value, making the choice that it's okay if
          the user does not supply channel configuration in the data store */
       ChannelConfigGet(HalDev, HalCh);
-      
-      /* update HalDev with data given in HalCh */  
+
+      /* update HalDev with data given in HalCh */
       ChannelConfigUpdate(HalDev, HalCh);
-      
+
 #ifdef __CPHAL_DEBUG
       if (DBG(8))
         {
@@ -1136,7 +1148,7 @@ static int halChannelSetup(HAL_DEVICE *HalDev, CHANNEL_INFO *HalCh, OS_SETUP *Os
 
   return (EC_NO_ERRORS);
   }
-   
+
 /*
  *  This function configures the rate at which the OAM timer scheduler
  *  channels will be scheduled.  The value of OamRate is the number of
@@ -1160,13 +1172,13 @@ static int halChannelSetup(HAL_DEVICE *HalDev, CHANNEL_INFO *HalCh, OS_SETUP *Os
  *
  *  The following is information on how to calculate the OAM rate.  There
  *  is only one OAM timer that is shared among all channels.  Therefore, if
- *  you wanted an OAM source function (ex. F4 CC source) to generate 1 cell/sec 
- *  across 8 channels, you would need to configure the OAM timer to schedule 8 
+ *  you wanted an OAM source function (ex. F4 CC source) to generate 1 cell/sec
+ *  across 8 channels, you would need to configure the OAM timer to schedule 8
  *  cells/sec.  In addition, the credits are shared between segment and end-to-end
  *  type OAM cells, so if you were sending both types of cells, you would
  *  need to configure the OAM timer for 16 cells/sec.  However, the clock
  *  rate must be specified in clock ticks between events.  Using an example
- *  clock rate of 125 MHz, the rate in clock ticks can be calculated by 
+ *  clock rate of 125 MHz, the rate in clock ticks can be calculated by
  *  dividing 125 Mhz by 16 cells/sec.  The results is 7812500 ticks.  Thus,
  *  every 7812500 clock cycles, an OAM cell will be generated for the F4 CC
  *  Source function.
@@ -1181,12 +1193,12 @@ static void OamRateConfig(HAL_DEVICE *HalDev)
      {
       switch(i)
         {
-         case 0:  OamRate = ((Freq/1000)*HalDev->OamLbTimeout); 
+         case 0:  OamRate = ((Freq/1000)*HalDev->OamLbTimeout);
                   break;
-         case 1: 
+         case 1:
          case 2:
          case 5:
-         case 6: 
+         case 6:
          case 7:
          case 8:  OamRate = (Freq/38);
                   break;
@@ -1199,33 +1211,33 @@ static void OamRateConfig(HAL_DEVICE *HalDev)
          default: OamRate = (Freq*5);
                   break;
         }
-  
+
       *(pOAM_TIMER_STATE_WORD_0(HalDev->dev_base) + (i*64) + 1) = OamRate;
      }
   }
 
 /**
  *  @ingroup AAL5_Functions
- *  This function is used to enable OAM functions (other than loopback) for a 
- *  particular channel.  The channel (embedded within OamConfig - see below) must 
+ *  This function is used to enable OAM functions (other than loopback) for a
+ *  particular channel.  The channel (embedded within OamConfig - see below) must
  *  have been configured for firmware OAM (not host OAM) for these configurations
- *  to take effect.  More than one function may be enabled at one time. 
+ *  to take effect.  More than one function may be enabled at one time.
  *  If more than one function is enabled, they must all be of the same level, all
- *  F4(VP) or all F5(VC).   
- * 
+ *  F4(VP) or all F5(VC).
+ *
  *  The usage of the OamConfig parameter is described through the table below.  To
  *  initiate firmware OAM, set one or more bits in OamConfig corresponding to the
- *  various OAM functions.  To disable firmware OAM functions, set bit 30 along 
+ *  various OAM functions.  To disable firmware OAM functions, set bit 30 along
  *  with any other combination of bits to shutdown various OAM functions at once.
  *
  *  Acronyms:
- *  e2e - end to end, seg - segment, CC - continuity check, 
+ *  e2e - end to end, seg - segment, CC - continuity check,
  *  AIS - Alarm Indication Signal
  *
  *  @par Bit:   Function:               Description
  *  - 31:       Reserved:
  *  - 30:       Setup/Teardown:         0 - enable, 1 - disable (Note 1)
- *  - 29:       F4  CC  Source seg:     0 - no action, 1 - configure 
+ *  - 29:       F4  CC  Source seg:     0 - no action, 1 - configure
  *  - 28:       F4  CC  Source e2e:     0 - no action, 1 - configure
  *  - 27:       F4  AIS Source seg:     0 - no action, 1 - configure
  *  - 26:       F4  AIS Source e2e:     0 - no action, 1 - configure
@@ -1239,14 +1251,14 @@ static void OamRateConfig(HAL_DEVICE *HalDev)
  *  - 18:       F5  CC  Sink e2e:       0 - no action, 1 - configure
  *  - 17:8:     Reserved:
  *  - 7:0:      Channel:                AAL5/AAL2 VC/VP channel (Note 2)
- * 
+ *
  *
  *  Note 1:  This bit must be clear to enable the specified OAM function.
  *  Note 2:  This must specify the VC channel for F5 functions, and the VP
  *           channel for F4 functions.
  *
  *  @param HalDev      CPHAL module instance. (set by xxxInitModule())
- *  @param OamConfig   A 32-bit integer field defined as follows: 
+ *  @param OamConfig   A 32-bit integer field defined as follows:
  */
 static void halOamFuncConfig(HAL_DEVICE *HalDev, unsigned int OamConfig)
   {
@@ -1256,49 +1268,49 @@ static void halOamFuncConfig(HAL_DEVICE *HalDev, unsigned int OamConfig)
 
 /**
  *  @ingroup AAL5_Functions
- *  This function is used to enable OAM loopback functions for a particular 
- *  channel.  The channel (embedded within OamConfig - see below) must have been 
- *  configured for firmware OAM (not host OAM) for these configurations to take 
- *  effect.  Only one loopback function can be enabled at a time.  
+ *  This function is used to enable OAM loopback functions for a particular
+ *  channel.  The channel (embedded within OamConfig - see below) must have been
+ *  configured for firmware OAM (not host OAM) for these configurations to take
+ *  effect.  Only one loopback function can be enabled at a time.
  *
- *  The LLID is inserted into to the OAM cell's LLID field, and it specifies the 
+ *  The LLID is inserted into to the OAM cell's LLID field, and it specifies the
  *  LLID of the connection point in the network where the generated loopback cell
- *  should be turned around.  The LLID is composed of 4 32-bit words, and this 
- *  function expects the caller to pass an array of 4 words in the LLID field.  
- *  The CorrelationTag is a 32-bit word that the PDSP uses to correlate loopback 
- *  commands with loopback responses.  It should simply be changed for each 
+ *  should be turned around.  The LLID is composed of 4 32-bit words, and this
+ *  function expects the caller to pass an array of 4 words in the LLID field.
+ *  The CorrelationTag is a 32-bit word that the PDSP uses to correlate loopback
+ *  commands with loopback responses.  It should simply be changed for each
  *  call, and there is no restriction on the value used for CorrelationTag.
- * 
+ *
  *  The usage of the OamConfig parameter is described through the table below.  To
  *  initiate firmware OAM, set one of the bits corresponding to the
- *  various loopback OAM functions.  Note that only one loopback source may be 
+ *  various loopback OAM functions.  Note that only one loopback source may be
  *  commanded at a time.
  *
  *  Acronyms:
  *  e2e - end to end, seg - segment, LB - loopback
- * 
+ *
  *  @par Bit:   Function:               Description
  *  - 31:16:    Reserved:
  *  - 15:       F4  LB Source seg:      0 - no action, 1 - configure (Note 1)
  *  - 14:       F4  LB Source seg:      0 - no action, 1 - configure (Note 1)
  *  - 13:       F4  LB Source e2e:      0 - no action, 1 - configure (Note 1)
- *  - 12:       F4  LB Source e2e:      0 - no action, 1 - configure (Note 1) 
+ *  - 12:       F4  LB Source e2e:      0 - no action, 1 - configure (Note 1)
  *  - 11:8:     Reserved:
  *  - 7:0:      Channel:                AAL5/AAL2 VC/VP channel (Note 2)
- * 
  *
- *  Note 1:  Only one LB function may be enabled at one time.  Once enabled, 
- *           the PDSP will time out after 5 seconds.  The host must wait until it 
- *           has received the result of the current LB request before initiating 
+ *
+ *  Note 1:  Only one LB function may be enabled at one time.  Once enabled,
+ *           the PDSP will time out after 5 seconds.  The host must wait until it
+ *           has received the result of the current LB request before initiating
  *           a new request. <BR>
  *  Note 2:  This must specify the VC channel for F5 functions, and the VP
  *           channel for F4 functions.
  *
  *  @param HalDev      CPHAL module instance. (set by xxxInitModule())
- *  @param OamConfig   A 32-bit integer field defined as follows: 
+ *  @param OamConfig   A 32-bit integer field defined as follows:
  *  @param LLID        Loopback Location Identifier (passed as 4 word array).
  *                     Must be configured in big endian format.
- *  @param CorrelationTag 32-bit tag correlates loopback commands with loopback 
+ *  @param CorrelationTag 32-bit tag correlates loopback commands with loopback
  *                        responses.  Must be configured in big endian format.
  *
  */
@@ -1331,8 +1343,8 @@ static void halOamLoopbackConfig(HAL_DEVICE *HalDev, unsigned int OamConfig, uns
 /*
  *  This function allows the host software to access any register directly.
  *  Primarily used for debug.
- *  
- *  @param   HalDev      CPHAL module instance. (set by xxxInitModule())  
+ *
+ *  @param   HalDev      CPHAL module instance. (set by xxxInitModule())
  *  @param   RegOffset   Hexadecimal offset to desired register (from device base addr)
  *
  *  @return  Volatile pointer to desired register.
@@ -1340,41 +1352,96 @@ static void halOamLoopbackConfig(HAL_DEVICE *HalDev, unsigned int OamConfig, uns
 static volatile bit32u* halRegAccess(HAL_DEVICE *HalDev, bit32u RegOffset)
   {
    /* compute the register address */
-   return ((volatile bit32u *)(HalDev->dev_base + RegOffset)); 
+   return ((volatile bit32u *)(HalDev->dev_base + RegOffset));
   }
 
 #ifdef __CPHAL_DEBUG
 static void dbgConfigDump(HAL_DEVICE *HalDev)
   {
    dbgPrintf("  AAL5 Inst %d Config Dump:\n", HalDev->Inst);
-   dbgPrintf("    Base     :%08x, offset:%08d\n", 
+   dbgPrintf("    Base     :%08x, offset:%08d\n",
              HalDev->dev_base, HalDev->offset);
-   dbgPrintf("    Interrupt:%08d, debug :%08d\n", 
+   dbgPrintf("    Interrupt:%08d, debug :%08d\n",
              HalDev->interrupt, HalDev->debug);
    osfuncSioFlush();
   }
 #endif
 
+/* Used (through Control()) by upper layer to flush all or part of a given
+   queue for a given channel.  It will skip a certain number of packets
+   from the head of the queue, and then zero the hardware forward pointer
+   for every other packet in the queue.  When the transmit interrupt occurs,
+   there is special logic in TxInt() to flush each packet with a
+   zero hardware forward pointer.
+ */
+static int TxFlush(HAL_DEVICE *HalDev, char *Key, char *Action, void *Value)
+  {
+   HAL_TCB *Last, *Curr;
+   int Ch, Queue, NumToKeep, FlushCount=0;
+
+   /* extract data from Value */
+   Ch = *(bit32u *)Value & 0x000000ff;
+   Queue = (*(bit32u *)Value & 0x0000ff00) >> 8;
+   NumToKeep = (*(bit32u *)Value & 0xffff0000) >> 16;
+
+   /* must insure this code is not interrupted */
+   HalDev->OsFunc->CriticalOn();
+
+   Curr = HalDev->TxActQueueHead[Ch][Queue];
+
+   if (Curr == 0)
+     goto EXIT_TX_FLUSH;  /* no need to flush, reached end of queue */
+
+   /* skip past packets to keep */
+   while (NumToKeep)
+     {
+      Last = Curr->Eop;
+
+      if (Last == 0)
+        goto EXIT_TX_FLUSH;
+      Curr = Last->Next;
+      if (Curr == 0)
+        goto EXIT_TX_FLUSH;  /* no need to flush, reached end of queue */
+      NumToKeep--;
+     }
+
+   /* zero out all other hardware next pointers in the queue */
+   while (Curr)
+     {
+      Last = Curr->Eop;
+      Curr = Last->Next;
+
+      Last = VirtToVirtNoCache(Last);
+      Last->HNext = 0;
+
+      FlushCount++;
+     }
+
+EXIT_TX_FLUSH:
+   HalDev->OsFunc->CriticalOff();
+   return (FlushCount);
+  }
+
 /**
  *  @ingroup CPHAL_Functions
  *  Performs a variety of control functions on the CPHAL module.  It is used to
  *  modify/read configuration parameters and to initiate internal functions.
- *  The @p Key indicates the function to perform or the parameter to access (note 
+ *  The @p Key indicates the function to perform or the parameter to access (note
  *  that these Keys are identical to those used in accessing the configuration data
  *  store).  @p Action is applicable to parameters only, and indicates what the
  *  CPHAL should do with the parameter (i.e. "Set", "Get", etc..).  The actions
  *  for each parameter are defined in the module specific documentation.
- *  
+ *
  *  @param   HalDev      CPHAL module instance. (set by xxxInitModule())
  *  @param   Key         Key specifying the parameter to change or internal function to initiate.  See module specific documentation for available keys.
  *  @param   Action      Specifies the action to take.  See module specific documentation for available actions.
  *  @param   Value       Pointer to new value for given @p Key parameter ("Set"), or returned value of Key ("Get").
- *  
+ *
  *  @return  EC_NO_ERRORS (ok).<BR>
  *           Possible Error Codes:<BR>
  *           @ref EC_VAL_INVALID_STATE "EC_VAL_INVALID_STATE"<BR>
  *           @ref EC_VAL_KEY_NOT_FOUND "EC_VAL_KEY_NOT_FOUND"<BR>
- *           @ref EC_VAL_ACTION_NOT_FOUND "EC_VAL_ACTION_NOT_FOUND"<BR>     
+ *           @ref EC_VAL_ACTION_NOT_FOUND "EC_VAL_ACTION_NOT_FOUND"<BR>
  */
 static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, void *Value)
   {
@@ -1392,7 +1459,18 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
 
    /* Verify proper device state */
    if (HalDev->State < enInitialized)
-     return (EC_AAL5|EC_FUNC_CONTROL|EC_VAL_INVALID_STATE);   
+     return (EC_AAL5|EC_FUNC_CONTROL|EC_VAL_INVALID_STATE);
+
+   if (HalDev->OsFunc->Strcmpi(Key, "TxFlush") == 0)
+     {
+      KeyFound=1;
+      if (HalDev->OsFunc->Strcmpi(Action, "Set") == 0)
+        {
+         ActionFound=1;
+         if (HalDev->State == enOpened)
+           rc = TxFlush(HalDev, "TxFlush", "Set", Value);
+        }
+     }
 
    if (HalDev->OsFunc->Strcmpi(Key, "Debug") == 0)
      {
@@ -1412,7 +1490,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
       if (HalDev->OsFunc->Strcmpi(Action, "Set") == 0)
         {
          ActionFound=1;
-  
+
          /* extract channel number */
          TmpKey += HalDev->OsFunc->Strlen("FwdUnkVc.");
          Ch = HalDev->OsFunc->Strtoul(TmpKey, &TmpKey, 10);
@@ -1420,7 +1498,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
          HalDev->ChData[Ch].FwdUnkVc = *(int *)Value;
 
          if ((HalDev->State == enOpened) && (HalDev->ChData[Ch].PktType == 3))
-           rc = HalDev->SarFunc->Control(HalDev->SarDev, Key, Action, Value);         
+           rc = HalDev->SarFunc->Control(HalDev->SarDev, Key, Action, Value);
         }
      }
 
@@ -1431,7 +1509,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
       if (HalDev->OsFunc->Strcmpi(Action, "Set") == 0)
         {
          ActionFound=1;
-         rc = HalDev->SarFunc->Control(HalDev->SarDev, Key, Action, Value);         
+         rc = HalDev->SarFunc->Control(HalDev->SarDev, Key, Action, Value);
         }
 
       if (HalDev->OsFunc->Strcmpi(Action, "Get") == 0)
@@ -1462,7 +1540,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
          *(int *)Value = HalDev->TurboDslErrors;
         }
      }
-   
+
    /* +GSG 030416 */
    if (HalDev->OsFunc->Strcmpi(Key, "F4_LB_Counter") == 0)
      {
@@ -1484,7 +1562,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
          *(int *)Value = SAR_PDSP_OAM_F5_LB_COUNT_REG(HalDev->dev_base);
         }
      }
-   
+
    if (HalDev->OsFunc->Strstr(Key, "Stats;") != 0)
      {
       KeyFound=1;
@@ -1719,7 +1797,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
       if (HalDev->OsFunc->Strcmpi(Action, "Set") == 0)
         {
          ActionFound=1;
-         
+
          /* this variable is controlled by the CPSAR module */
          if (HalDev->State == enOpened)
            {
@@ -1734,12 +1812,12 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
       if (HalDev->OsFunc->Strcmpi(Action, "Set") == 0)
         {
          ActionFound=1;
-         
+
          HalDev->OamLbTimeout = *(int *)Value;
          /* this variable is controlled by the CPSAR module */
          if (HalDev->State == enOpened)
            {
-            *(pOAM_TIMER_STATE_WORD_0(HalDev->dev_base) + 1) = 
+            *(pOAM_TIMER_STATE_WORD_0(HalDev->dev_base) + 1) =
               ((HalDev->SarFrequency/1000) * HalDev->OamLbTimeout);
            }
         }
@@ -1778,7 +1856,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
       if (HalDev->OsFunc->Strcmpi(Action, "Set") == 0)
         {
          ActionFound=1;
-        
+
          /* used in halOpen to decide which interrupt handler to use */
          HalDev->StrictPriority = *(int *)Value;
         }
@@ -1790,7 +1868,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
       if (HalDev->OsFunc->Strcmpi(Action, "Set") == 0)
         {
          ActionFound=1;
-        
+
          if ((*(int *)Value) > 0)
            HalDev->MaxFrags = *(int *)Value;
           else
@@ -1813,7 +1891,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
       if (HalDev->OsFunc->Strcmpi(Action, "Get") == 0)
         {
          ActionFound=1;
-        
+
          /* extract channel number */
          TmpKey += HalDev->OsFunc->Strlen("RxVc_RDICount.");
          Ch = HalDev->OsFunc->Strtoul(TmpKey, &TmpKey, 10);
@@ -1827,7 +1905,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
       if (HalDev->OsFunc->Strcmpi(Action, "Set") == 0)
         {
          ActionFound=1;
-        
+
          /* extract channel number */
          TmpKey += HalDev->OsFunc->Strlen("RxVc_RDICount.");
          Ch = HalDev->OsFunc->Strtoul(TmpKey, &TmpKey, 10);
@@ -1848,7 +1926,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
       if (HalDev->OsFunc->Strcmpi(Action, "Get") == 0)
         {
          ActionFound=1;
-        
+
          /* extract channel number */
          TmpKey += HalDev->OsFunc->Strlen("RxVc_AISseg.");
          Ch = HalDev->OsFunc->Strtoul(TmpKey, &TmpKey, 10);
@@ -1869,7 +1947,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
       if (HalDev->OsFunc->Strcmpi(Action, "Get") == 0)
         {
          ActionFound=1;
-        
+
          /* extract channel number */
          TmpKey += HalDev->OsFunc->Strlen("RxVc_AISetoe.");
          Ch = HalDev->OsFunc->Strtoul(TmpKey, &TmpKey, 10);
@@ -1890,7 +1968,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
       if (HalDev->OsFunc->Strcmpi(Action, "Get") == 0)
         {
          ActionFound=1;
-        
+
          /* extract channel number */
          TmpKey += HalDev->OsFunc->Strlen("RxVp_RDICount.");
          Ch = HalDev->OsFunc->Strtoul(TmpKey, &TmpKey, 10);
@@ -1904,7 +1982,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
       if (HalDev->OsFunc->Strcmpi(Action, "Set") == 0)
         {
          ActionFound=1;
-        
+
          /* extract channel number */
          TmpKey += HalDev->OsFunc->Strlen("RxVp_RDICount.");
          Ch = HalDev->OsFunc->Strtoul(TmpKey, &TmpKey, 10);
@@ -1925,7 +2003,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
       if (HalDev->OsFunc->Strcmpi(Action, "Get") == 0)
         {
          ActionFound=1;
-        
+
          /* extract channel number */
          TmpKey += HalDev->OsFunc->Strlen("RxVp_AISseg.");
          Ch = HalDev->OsFunc->Strtoul(TmpKey, &TmpKey, 10);
@@ -1946,7 +2024,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
       if (HalDev->OsFunc->Strcmpi(Action, "Get") == 0)
         {
          ActionFound=1;
-        
+
          /* extract channel number */
          TmpKey += HalDev->OsFunc->Strlen("RxVp_AISetoe.");
          Ch = HalDev->OsFunc->Strtoul(TmpKey, &TmpKey, 10);
@@ -1965,7 +2043,7 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
    if (ActionFound == 0)
      rc = (EC_AAL5|EC_FUNC_CONTROL|EC_VAL_ACTION_NOT_FOUND);
 
-   return(rc);    
+   return(rc);
   }
 
 /*
@@ -2017,7 +2095,7 @@ static bit32u ConfigGet(HAL_DEVICE *HalDev)
    return (EC_NO_ERRORS);
   }
 
-/** 
+/**
  *  @ingroup CPHAL_Functions
  *  This function initializes the CPHAL module. It gathers all
  *  necessary global configuration info from the configuration file, and
@@ -2057,7 +2135,7 @@ static int halInit(HAL_DEVICE *HalDev)
   /* Retrieve HAL configuration parameters from data store */
   error_code = ConfigGet(HalDev);
   if (error_code) return (error_code);
- 
+
   /* Other items (OAM related) that need to be passed in somehow */
   HalDev->DeviceCPID[0] = 0xffffffff;
   HalDev->DeviceCPID[1] = 0xffffffff;
@@ -2075,7 +2153,7 @@ static int halInit(HAL_DEVICE *HalDev)
   /* Initialize various HalDev members.  This is probably overkill, since these
      are initialized in ChannelSetup() and HalDev is cleared in InitModule(). */
   for (i=0; i<NUM_AAL5_CHAN; i++)
-    { 
+    {
      HalDev->InRxInt[i]=FALSE;
      HalDev->ChIsOpen[i][DIRECTION_TX] = FALSE;
      HalDev->ChIsOpen[i][DIRECTION_RX] = FALSE;
@@ -2088,9 +2166,9 @@ static int halInit(HAL_DEVICE *HalDev)
   StatsClear(HalDev);
 
   /* init Stat pointers */
- 
-  /* even though these statistics may be for multiple channels/queues, i need 
-     only configure the pointer to the beginning of the array, and I can index 
+
+  /* even though these statistics may be for multiple channels/queues, i need
+     only configure the pointer to the beginning of the array, and I can index
      from there if necessary */
   StatsTable0[0].StatPtr  = &HalDev->Stats.CrcErrors[0];
   StatsTable0[1].StatPtr  = &HalDev->Stats.LenErrors[0];
@@ -2129,7 +2207,7 @@ static int halInit(HAL_DEVICE *HalDev)
   StatsTable4[2].StatPtr  = &HalDev->interrupt;
   StatsTable4[3].StatPtr  = &HalDev->debug;
   StatsTable4[4].StatPtr  = &HalDev->Inst;
- 
+
   StatsTable3[0].StatPtr  = &HalDev->ChData[0].RxBufSize;
   StatsTable3[1].StatPtr  = &HalDev->ChData[0].RxBufferOffset;
   StatsTable3[2].StatPtr  = &HalDev->ChData[0].RxNumBuffers;
@@ -2163,12 +2241,12 @@ static int halInit(HAL_DEVICE *HalDev)
   }
 
 /*
- *  Use this function to actually send after queuing multiple packets using 
- *  Send().  This is a debug only function that should be removed - it was 
- *  necessary to properly implement my loopback tests. 
+ *  Use this function to actually send after queuing multiple packets using
+ *  Send().  This is a debug only function that should be removed - it was
+ *  necessary to properly implement my loopback tests.
  *
- *  @param   HalDev      CPHAL module instance. (set by xxxInitModule()) 
- *  @param   Queue       Queue number to kick. 
+ *  @param   HalDev      CPHAL module instance. (set by xxxInitModule())
+ *  @param   Queue       Queue number to kick.
  *
  *  @return  0 OK, Non-Zero Not OK
  */
@@ -2192,13 +2270,13 @@ static int halKick(HAL_DEVICE *HalDev, int Queue)
            VirtToPhys(HalDev->TxActQueueHead[Ch][Queue]);
          HalDev->TxActive[Ch][Queue]=TRUE;
         }
-     } 
- 
-   return (EC_NO_ERRORS);   
+     }
+
+   return (EC_NO_ERRORS);
   }
 
 /*  +GSG 030305  For PITS #99
- *  Alternate interrupt handler that uses the INT_VECTOR in order to 
+ *  Alternate interrupt handler that uses the INT_VECTOR in order to
  *  provide strict priority handling among channels, beginning with Ch 0.
  *
  *  @param   HalDev   CPHAL module instance. (set by xxxInitModule())
@@ -2230,7 +2308,7 @@ static int DeviceIntAlt(HAL_DEVICE *HalDev, int *MoreWork)
        /*printf("\015 %d RxQ",HalDev->RxActQueueCount[0]);
          HalDev->OsFunc->Control(HalDev->OsDev, enSIO_FLUSH, enNULL, 0); */
 
-      if (tmp&TXH_PEND) 
+      if (tmp&TXH_PEND)
         {
          /* decide which channel to service */
          Ch = (SAR_INTR_VECTOR(HalDev->dev_base) & TXH_PEND_INVEC);
@@ -2242,7 +2320,7 @@ static int DeviceIntAlt(HAL_DEVICE *HalDev, int *MoreWork)
            *MoreWork = 1;
         }
 
-      if (tmp&TXL_PEND) 
+      if (tmp&TXL_PEND)
         {
          /* decide which channel to service */
          Ch = ((SAR_INTR_VECTOR(HalDev->dev_base) & TXL_PEND_INVEC) >> 4);
@@ -2265,7 +2343,7 @@ static int DeviceIntAlt(HAL_DEVICE *HalDev, int *MoreWork)
          if (WorkFlag == 1)
            *MoreWork = 1;
         }
-       
+
       if (tmp&STS_PEND)
         {
          /* GPR 2 code added for PITS 103 */
@@ -2277,7 +2355,7 @@ static int DeviceIntAlt(HAL_DEVICE *HalDev, int *MoreWork)
            {
             /* pass loopback result back to OS */
             HalDev->OsFunc->Control(HalDev->OsDev, "OamLbResult", "Set",
-              (bit32u *)pSAR_PDSP_OAM_LB_RESULT_REG(HalDev->dev_base)); 
+              (bit32u *)pSAR_PDSP_OAM_LB_RESULT_REG(HalDev->dev_base));
            }
 
          /* clear the interrupt */
@@ -2285,11 +2363,15 @@ static int DeviceIntAlt(HAL_DEVICE *HalDev, int *MoreWork)
         }
 
       if (tmp&AAL2_PEND)
-        { 
+        {
           /* no action defined */
         }
-    
+
       SAR_INTR_VECTOR(HalDev->dev_base) = 0;
+     }
+    else
+     {
+      return (EC_VAL_INTERRUPT_NOT_FOUND);
      }
 
    return (EC_NO_ERRORS);
@@ -2338,7 +2420,7 @@ static int DeviceInt(HAL_DEVICE *HalDev, int *MoreWork)
        /*printf("\015 %d RxQ",HalDev->RxActQueueCount[0]);
          HalDev->OsFunc->Control(HalDev->OsDev, enSIO_FLUSH, enNULL, 0); */
 
-      if (tmp&TXH_PEND) 
+      if (tmp&TXH_PEND)
         {
          /* decide which channel to service */
          FirstCh = NextTxHCh;
@@ -2355,7 +2437,7 @@ static int DeviceInt(HAL_DEVICE *HalDev, int *MoreWork)
                return (EC_AAL5|EC_FUNC_DEVICE_INT|EC_VAL_NO_TXH_WORK_TO_DO);
               }
            }
- 
+
          rc = TxInt(HalDev,Ch,0,&WorkFlag);
          if (rc) return (rc);
 
@@ -2385,15 +2467,15 @@ static int DeviceInt(HAL_DEVICE *HalDev, int *MoreWork)
          if (rc) return (rc);
 
          if (WorkFlag == 1)
-           *MoreWork = 1;       
+           *MoreWork = 1;
         }
-         
+
       if (tmp&RX_PEND)
         {
          FirstCh = NextRxCh;
          while (1)
            {
-            Ch = NextRxCh++;   
+            Ch = NextRxCh++;
             if (NextRxCh == 16)
               NextRxCh = 0;
             if (SAR_RX_MASKED_STATUS(HalDev->dev_base) & (1 << Ch))
@@ -2411,7 +2493,7 @@ static int DeviceInt(HAL_DEVICE *HalDev, int *MoreWork)
          if (WorkFlag == 1)
            *MoreWork = 1;
         }
-       
+
       if (tmp&STS_PEND)
         {
          /* +GSG 030305 */
@@ -2424,7 +2506,7 @@ static int DeviceInt(HAL_DEVICE *HalDev, int *MoreWork)
            {
             /* pass loopback result back to OS */
             HalDev->OsFunc->Control(HalDev->OsDev, "OamLbResult", "Set",
-              (bit32u *)pSAR_PDSP_OAM_LB_RESULT_REG(HalDev->dev_base)); 
+              (bit32u *)pSAR_PDSP_OAM_LB_RESULT_REG(HalDev->dev_base));
            }
 
          /* clear the interrupt */
@@ -2432,11 +2514,15 @@ static int DeviceInt(HAL_DEVICE *HalDev, int *MoreWork)
         }
 
       if (tmp&AAL2_PEND)
-        { 
+        {
           /* no action defined */
         }
-    
+
       SAR_INTR_VECTOR(HalDev->dev_base) = 0;
+     }
+    else
+     {
+      return (EC_VAL_INTERRUPT_NOT_FOUND);
      }
 
    HalDev->NextTxCh[0] = NextTxHCh;
@@ -2449,10 +2535,10 @@ static int DeviceInt(HAL_DEVICE *HalDev, int *MoreWork)
    return (EC_NO_ERRORS);
   }
 
-/** 
+/**
  *  @ingroup CPHAL_Functions
  *  This function starts the operation of the CPHAL device.  It takes the device
- *  out of reset, and calls @c IsrRegister().  This function should be called after 
+ *  out of reset, and calls @c IsrRegister().  This function should be called after
  *  calling the @c Init() function.
  *
  *  @param  HalDev   CPHAL module instance. (set by xxxInitModule())
@@ -2538,7 +2624,7 @@ static int halOpen(HAL_DEVICE *HalDev)
    /*for (i=0; i<NUM_AAL5_CHAN; i++)
      for (j=0; j<NUM_TX_STATE_WORDS; j++)
        {
-        *(pTX_DMA_STATE_WORD_0(SarBase) + (i*64) + j) = 0; 
+        *(pTX_DMA_STATE_WORD_0(SarBase) + (i*64) + j) = 0;
         }*/
 
    /* Check that Tx DMA State RAM was cleared */
@@ -2583,12 +2669,12 @@ static int halOpen(HAL_DEVICE *HalDev)
    /* Setup OAM Padding Block */
    for (i=0; i<12; i++)
      {
-      *(pOAM_PADDING_BLOCK_WORD_0(SarBase) + i) = ((i==11)?0x6a6a0000:0x6a6a6a6a);    
+      *(pOAM_PADDING_BLOCK_WORD_0(SarBase) + i) = ((i==11)?0x6a6a0000:0x6a6a6a6a);
      }
 
    /* Enable Tx CPPI DMA */
    TX_CPPI_CTL_REG(HalDev->dev_base) = 1;
-   
+
    /* Enable Rx CPPI DMA */
    RX_CPPI_CTL_REG(HalDev->dev_base) = 1;
 
@@ -2596,7 +2682,7 @@ static int halOpen(HAL_DEVICE *HalDev)
    /* Fix for PITS 103 */
    /* Enable Host Interrupt for GPR 2 (OAM LB result register) */
    SAR_HOST_INT_EN_SET_REG(HalDev->dev_base) |= 0x04000000;
-   
+
    /* +GSG 030304 to fix PITS 99 (if block is new)*/
    if (HalDev->StrictPriority == 1)
      {
@@ -2634,10 +2720,10 @@ static int halOpen(HAL_DEVICE *HalDev)
  *  @ingroup CPHAL_Functions
  *  Called to retrigger the interrupt mechanism after packets have been
  *  processed.  Call this function when the HalISR function indicates that
- *  there is no more work to do.  Proper use of this function will guarantee 
- *  that interrupts are never missed.  
+ *  there is no more work to do.  Proper use of this function will guarantee
+ *  that interrupts are never missed.
  *
- *  @param  HalDev   CPHAL module instance. (set by xxxInitModule())  
+ *  @param  HalDev   CPHAL module instance. (set by xxxInitModule())
  *
  *  @return EC_NO_ERRORS (ok). <BR>
  */
@@ -2651,7 +2737,7 @@ static int halPacketProcessEnd(HAL_DEVICE *HalDev)
      }
 #endif
 
-   SAR_EOI(HalDev->dev_base) = 0;
+   SAR_EOI(HalDev->dev_base) |= 0;
    return (EC_NO_ERRORS);
   }
 
@@ -2659,7 +2745,7 @@ static int halPacketProcessEnd(HAL_DEVICE *HalDev)
  *  @ingroup CPHAL_Functions
  *  This function probes for the instance of the CPHAL module.  It will call
  *  the OS function @c DeviceFindInfo() to get the information required.
- *  
+ *
  *  @param   HalDev      CPHAL module instance. (set by xxxInitModule())
  *
  *  @return  EC_NO_ERRORS (ok). <BR>
@@ -2705,10 +2791,10 @@ static int halProbe(HAL_DEVICE *HalDev)
    /* Set device state to DevFound */
    HalDev->State = enDevFound;
 
-   return(EC_NO_ERRORS);    
+   return(EC_NO_ERRORS);
   }
 
-/** 
+/**
  *  @ingroup CPHAL_Functions
  *  This function shuts down the CPHAL module completely.  The caller must call
  *  Close() to put the device in reset prior shutting down.  This call will free
@@ -2717,7 +2803,7 @@ static int halProbe(HAL_DEVICE *HalDev)
  *  must be initiated by a call to xxxInitModule(), which starts the entire process
  *  over again.
  *
- *  @param   HalDev   CPHAL module instance. (set by xxxInitModule())  
+ *  @param   HalDev   CPHAL module instance. (set by xxxInitModule())
  *
  *  @return  EC_NO_ERRORS (ok). <BR>
  *           Possible Error Codes:<BR>
@@ -2741,9 +2827,9 @@ static int halShutdown(HAL_DEVICE *HalDev)
 
    /* Buffer/descriptor resources may still need to be freed if a Close
       Mode 1 was performed prior to Shutdown - clean up here */    /*GSG+030514*/
-   for (Ch=0; Ch<NUM_AAL5_CHAN; Ch++)                                
-     {                                                             
-      if (HalDev->RcbStart[Ch] != 0)                           
+   for (Ch=0; Ch<NUM_AAL5_CHAN; Ch++)
+     {
+      if (HalDev->RcbStart[Ch] != 0)
         FreeRx(HalDev,Ch);
 
       for(Queue=0; Queue<MAX_QUEUE; Queue++)
@@ -2791,9 +2877,9 @@ static int halShutdown(HAL_DEVICE *HalDev)
 
 /**
  *  @ingroup CPHAL_Functions
- *  Used to perform regular checks on the device.  This function should be 
- *  called at a regular interval specified by the @c Tick parameter. 
- *  
+ *  Used to perform regular checks on the device.  This function should be
+ *  called at a regular interval specified by the @c Tick parameter.
+ *
  *  @param   HalDev      CPHAL module instance. (set by xxxInitModule())
  *
  *  @return  EC_NO_ERRORS (ok).<BR>
@@ -2816,7 +2902,7 @@ static int halTick(HAL_DEVICE *HalDev)
    return(EC_NO_ERRORS);
   }
 
-/** 
+/**
  *  @ingroup CPHAL_Functions
  *
  *  This function will:
@@ -2827,22 +2913,22 @@ static int halTick(HAL_DEVICE *HalDev)
  *  -# return the size of the HAL_FUNCTIONS structure through the HalFuncSize pointer.  The OS
  *     should check this value to ensure that the HAL meets its minimum requirement.
  *
- *  Version checking between the OS and the CPHAL is done using the OsFuncSize and 
+ *  Version checking between the OS and the CPHAL is done using the OsFuncSize and
  *  HalFuncSize.  Future versions of the CPHAL may add new functions to either
  *  HAL_FUNCTIONS or OS_FUNCTIONS, but will never remove functionality.  This enables
  *  both the HAL and OS to check the size of the function structure to ensure that
  *  the current OS and CPHAL are compatible.
  *
- *  Note:  This is the only function exported by a CPHAL module. 
+ *  Note:  This is the only function exported by a CPHAL module.
  *
  *  Please refer to the section "@ref hal_init" for example code.
  *
- *  @param   HalDev  Pointer to pointer to CPHAL module information.  This will 
- *                   be used by the OS when communicating to this module via 
+ *  @param   HalDev  Pointer to pointer to CPHAL module information.  This will
+ *                   be used by the OS when communicating to this module via
  *                   CPHAL. Allocated during the call.
  *  @param   OsDev   Pointer to OS device information.  This will be saved by
  *                   the CPHAL and returned to the OS when required.
- *  @param   HalFunc Pointer to pointer to structure containing function pointers for all CPHAL 
+ *  @param   HalFunc Pointer to pointer to structure containing function pointers for all CPHAL
  *                   interfaces.  Allocated during the call.
  *  @param   OsFunc  Pointer to structure containing function pointers for all OS
  *                   provided interfaces.  Must be allocated by OS prior to call.
@@ -2850,25 +2936,25 @@ static int halTick(HAL_DEVICE *HalDev)
  *  @param   HalFuncSize    Pointer to the size of the HAL_FUNCTIONS structure.
  *  @param   Inst    The instance number of the module to initialize. (start at
  *                   0).
- * 
+ *
  *  @return  EC_NO_ERRORS (ok). <BR>
  *           Possible Error Codes:<BR>
  *           @ref EC_VAL_OS_VERSION_NOT_SUPPORTED "EC_VAL_OS_VERSION_NOT_SUPPORTED"<BR>
  *           @ref EC_VAL_MALLOC_DEV_FAILED "EC_VAL_MALLOC_DEV_FAILED"<BR>
  *           @ref EC_VAL_MALLOC_FAILED "EC_VAL_MALLOC_FAILED"<BR>
  */
-int xxxInitModule(HAL_DEVICE **HalDev, 
-                 OS_DEVICE *OsDev, 
-                 HAL_FUNCTIONS **HalFunc, 
-                 OS_FUNCTIONS *OsFunc, 
+int xxxInitModule(HAL_DEVICE **HalDev,
+                 OS_DEVICE *OsDev,
+                 HAL_FUNCTIONS **HalFunc,
+                 OS_FUNCTIONS *OsFunc,
                  int OsFuncSize,
                  int *HalFuncSize,
                  int Inst);
 
-int cpaal5InitModule(HAL_DEVICE **HalDev, 
-                 OS_DEVICE *OsDev, 
-                 HAL_FUNCTIONS **HalFunc, 
-                 OS_FUNCTIONS *OsFunc, 
+int cpaal5InitModule(HAL_DEVICE **HalDev,
+                 OS_DEVICE *OsDev,
+                 HAL_FUNCTIONS **HalFunc,
+                 OS_FUNCTIONS *OsFunc,
                  int OsFuncSize,
                  int *HalFuncSize,
                  int Inst)
@@ -2901,9 +2987,9 @@ int cpaal5InitModule(HAL_DEVICE **HalDev,
    /* initialize the HAL_DEVICE structure */
    HalPtr->OsDev  = OsDev;
    /*HalPtr->OsOpen = OsDev;*/
-   HalPtr->Inst   = Inst; 
+   HalPtr->Inst   = Inst;
    HalPtr->OsFunc = OsFunc;
-  
+
    /* Supply pointers for the CPHAL API functions */
    HalFuncPtr->RxReturn        = halRxReturn;
    HalFuncPtr->Init            = halInit;
@@ -2913,7 +2999,7 @@ int cpaal5InitModule(HAL_DEVICE **HalDev,
    HalFuncPtr->ChannelTeardown = halChannelTeardown;
    HalFuncPtr->Open            = halOpen;
    HalFuncPtr->Kick            = halKick;
-   HalFuncPtr->RegAccess       = halRegAccess; 
+   HalFuncPtr->RegAccess       = halRegAccess;
    HalFuncPtr->Probe           = halProbe;
    HalFuncPtr->Control         = halControl;
    HalFuncPtr->Tick            = halTick;
@@ -2932,7 +3018,7 @@ int cpaal5InitModule(HAL_DEVICE **HalDev,
    cpsarInitModule(NULL, NULL, 0, NULL, &SarFuncSize, Inst);
 
    if (SarFuncSize!=sizeof(CPSAR_FUNCTIONS))
-    return(EC_AAL5|EC_FUNC_HAL_INIT|EC_VAL_CPSAR_VERSION_NOT_SUPPORTED); 
+    return(EC_AAL5|EC_FUNC_HAL_INIT|EC_VAL_CPSAR_VERSION_NOT_SUPPORTED);
 
    HalPtr->SarFunc = (CPSAR_FUNCTIONS *) OsFunc->Malloc(SarFuncSize);
    */

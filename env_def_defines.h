@@ -17,7 +17,7 @@
 //*
 //*********************************************************************
 //*
-//* FILENAME: dpsys_defines.h
+//* FILENAME: env_def_defines.h
 //*
 //* ABSTRACT: This file provides a mechanism for defining standard
 //*           preprocessor flag sets for datapump.
@@ -265,10 +265,64 @@
 //*           10/09/2003  Hanyu Liu      Defined token ADSL2_1BIT_TONE to support Rx one bit constellation.
 //*           10/12/2003  Hanyu Liu      Defined token ADSL2_BSWP for bitswap.
 //*           10/20/2003  Xiaohui Li     Added READSL2_ENABLE token.
+//*           11/10/2003  Venkatraman    Added ADSL2Plus changes from TI Bangalore.
 //*           12/01/2003  Seungmok Oh    Added TXDF2B_PROFILING token, which is active only for POTS target.
 //*           12/09/2003  Jack Huang     Turned on GHS_NON_STD_FIELD support for AR7 POTS targets
-//*           12/16/2003  Mustafa T.     Added the necessary definitions for diag target.  
-//*****************************************************************************************************
+//*           12/16/2003  Mustafa T.     Added the necessary definitions for diag target.
+//*           02/04/2004  Sumeer Bhatara Removed OVHD_PMDTEST_PARA token.
+//*           02/04/2004  Mannering      Added token OHIO_SUPPORT.
+//*           03/16/2004  Mannering      Added token CLI to support Ohio single serial port
+//*           04/30/2004  Hanyu Liu      Added token ADSL2_GhsRA_DBG to enable different level of CLI for ADSL2/2+ RA.
+//*           07/16/2004  Mallesh        Enabled ADSL2_1BIT_TONE token to enable support for 1 bit tones
+//*           08/10/2004  Brian Z.       Enabled OLAYDP and DMT_Bis for AFE Diag
+//*           11/01/2004  Sameer V       Enabled CO_PROFILES for ar0700mp_diag
+//*           10/04/2004  Thomas Leyrer  Added token for rea-time trace (RTT) support
+//*           11/19/2004  J. Bergsagel   Turned on the OHIO_SUPPORT token by default
+//*           03/24/2005  Venkat R       Removed COMB_LINEDIAG_ENABLE as it was always set to 0
+//*           03/24/2005  Venkat R       Removed DDC Token as it was always set to 0
+//*                                      Removed DPLL_MODE token as it was always 0
+//*                                      Removed PHY_EC_ENABLE (Set to 1) Token
+//*                                      Removed PHY_HYB_ENABLE (Set to 1) Token
+//*                                      Removed PHY_NDIAG_ENABLE (Set to 0) Token
+//*                                      Removed PHY_PATH_ENABLE (Set to 1) Token
+//*           03/30/2005  Venkat R       Removed DMT_BIS Enable (Set to 1) Token
+//*                                      Removed DS_PWR_CUTBACK (Set to 0) Token
+//*                                      Removed ARTT (Set to 0) Token
+//*                                      Removed LINE_DIAG (Set to 1) Token
+//*                                      Removed MANUFACTURING_TESTS (Set to 0) Token
+//*                                      Removed GHS_NON_STD_FIELD (Set to 1) Not used anywhere Token\
+//*                                      Removed NLNOISEADJSNR (Set to 0) Token
+//*           04/01/2005  Venkat R       Removed CO_PROFILE (Set to 1) Token
+//*                                      Removed SPECTRAL_SHAPING (Set to 1) Token
+//*                                      Removed SEPARATE_TX_RX_BUFFERS (Set to 0) Token
+//*                                      Removed TRELLIS (Set to 1) Token
+//*           04/04/2005  Venkat R       Removed READSL2_ENABLE (Set to 1) Token
+//*                                      Removed USB (Set to 0) Token
+//*                                      Removed TC_ATM_PCIMASTER (Set to 0) Token
+//*           04/07/2005  Venkat R       Removed CLI (Set to 1) Token
+//*                                      Removed DUAL_TEQ (Set to 1) Token
+//*           05/06/2005  Mike Locke     Remove DBG_CLI_MEMEORY_ACCESS token CQ9583
+//*           05/23/2005  Venkat R       Synchronize Tokens from ar0700mp to ar0700db
+//*           05/27/2005  Kapil Gulati   Disable ADSL2_BSWP token for ISDN diagnostics build similar
+//*                                      similar to what is done for POTS diagnostics build.
+//*           06/08/2005  Yi Han         Added token CQ_9618 to disable the change
+//*           06/16/2005  Hanyu Liu      Removed CQ_9618 token. Enabled CQ9618 code.
+//*           08/08/2005  Kapil Gulati   CQ9600: Enabled NLNOISEADJSNR_EC for ISDN build.
+//*           09/15/2005  Venkat R       CQ9583: Remove DSPBIOSII Token
+//*           12/09/2005  Venkat R       CQ9583: Explicitly declared TXDF2B_PROFILING to be zero for MFGR_DIAG
+//*                                      earlier it was implicitly taking a value of zero
+//*           12/12/2005  C Urrutia      CQ10073: Added RFI display token
+//*           01/24/2006  Peter Hou      CQ9885: Added OVHD_L1CAPTURE for overhead channel raw data collection (default off)
+//*           01/24/2006  Gerald Peter   CQ10142: Enabled RTT code and CLI code
+//            UR8_MERGE_START_END CQ10202 Nima Ferdosi
+//*           05/25/2006                 CQ10202: Added channel reporting token. 
+//            UR8_MERGE_START CQ10786  KC
+//                                       fix for Tonewi unable to link up to Globalspan DSLAM with 128K fix rate 
+//            UR8_MERGE_END CQ10786  KC
+// UR8_MERGE_START CQ11007  KCCHEN
+// 09/26/06 KCCHEN       CQ11007 : US SNR margin update
+// UR8_MERGE_END CQ11007 KCCHEN
+//*************************************************************************************************************************
 //*
 //* The default flag settings are:
 //*
@@ -361,6 +415,9 @@
 //
 //
 
+#ifndef OVHD_L1CAPTURE  // used fro OVHD L1 raw data collectiong (for debugging)
+#define OVHD_L1CAPTURE 0
+#endif
 #if defined(OBJSFX_ar0700db_debugobj)
 #ifndef OBJSFX_ar0700dbobj
 #define OBJSFX_ar0700dbobj 1
@@ -382,22 +439,19 @@
 // (All other tokens from the non-_debug partner that are non-conflicting will also be picked up)
 
 #ifndef ADSL2_BSWP
-#define ADSL2_BSWP 1 
+#define ADSL2_BSWP 1
 #endif
-#ifndef AOC 
-#define AOC 1 
+#ifndef AOC
+#define AOC 1
 #endif
 #ifndef BITSWAP
-#define BITSWAP 1 
+#define BITSWAP 1
 #endif
 #ifndef DEBUG_ADSL2
 #define DEBUG_ADSL2  0
 #endif
-#ifndef DEBUG_LOG 
-#define DEBUG_LOG 0 
-#endif
-#ifndef GHS_NON_STD_FIELD
-#define GHS_NON_STD_FIELD 1
+#ifndef DEBUG_LOG
+#define DEBUG_LOG 0
 #endif
 #ifndef JTAG
 #define JTAG 1
@@ -434,9 +488,6 @@
 #ifndef EXTERNBERT
 #define EXTERNBERT 0
 #endif
-#ifndef GHS_NON_STD_FIELD
-#define GHS_NON_STD_FIELD 1
-#endif
 #ifndef MARGIN_DELTA_RETRAIN
 #define MARGIN_DELTA_RETRAIN 0
 #endif
@@ -449,6 +500,18 @@
 #ifndef SHALF
 #define SHALF 1
 #endif
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Copy tokens from SERVICE_POTS
+// ATM_TC_HW and SWTC are mutually exclusive
+#ifndef ADSL2_1BIT_TONE
+#define ADSL2_1BIT_TONE 1
+#endif
+#ifndef ADSL2_BSWP
+#define ADSL2_BSWP 1
+#endif
+#ifndef DS_RX_CODEWORD
+#define DS_RX_CODEWORD 1
+#endif
+
 
 
 #elif defined(OBJSFX_ar0700db_diagobj)
@@ -473,9 +536,6 @@
 #ifndef BITSWAP
 #define BITSWAP 0
 #endif
-#ifndef CO_PROFILE
-#define CO_PROFILE 0
-#endif
 #ifndef MARGIN_DELTA_RETRAIN
 #define MARGIN_DELTA_RETRAIN 0
 #endif
@@ -486,10 +546,23 @@
 #define OAM_EOC 0
 #endif
 #ifndef OLAYDP
-#define OLAYDP 0
+#define OLAYDP 1
 #endif
 #ifndef SNR_UPDATE
 #define SNR_UPDATE 0
+#endif
+#ifndef NLNOISEADJSNR_EC
+#define NLNOISEADJSNR_EC 1
+#endif
+
+#ifndef US_CRC_RETRAIN
+#define US_CRC_RETRAIN 0
+#endif
+#ifndef ADSL2_BSWP
+#define ADSL2_BSWP 0
+#endif
+#ifndef DS_RX_CODEWORD
+#define DS_RX_CODEWORD 0
 #endif
 
 #elif defined(OBJSFX_ar0700mpobj)
@@ -506,10 +579,10 @@
 #endif
 // ATM_TC_HW and SWTC are mutually exclusive
 #ifndef ADSL2_1BIT_TONE
-#define ADSL2_1BIT_TONE 0
+#define ADSL2_1BIT_TONE 1
 #endif
 #ifndef ADSL2_BSWP
-#define ADSL2_BSWP 1 
+#define ADSL2_BSWP 1
 #endif
 #ifndef ATM_TC_HW
 #define ATM_TC_HW 1
@@ -526,11 +599,8 @@
 #ifndef OLAYDP
 #define OLAYDP 1
 #endif
-#ifndef DMT_BIS
-#define DMT_BIS 1 
-#endif
 #ifndef SHALF
-#define SHALF 1 
+#define SHALF 1
 #endif
 #ifndef MEM_STR
 #define MEM_STR 0
@@ -544,17 +614,8 @@
 #ifndef US_LOOP_BACK
 #define US_LOOP_BACK 0
 #endif
-#ifndef OVHD_PMDTEST_PARA
-#define OVHD_PMDTEST_PARA 0
-#endif
 #ifndef DS_RX_CODEWORD
-#define DS_RX_CODEWORD 1 
-#endif
-#ifndef READSL2_ENABLE
-#define READSL2_ENABLE 1
-#endif
-#ifndef GHS_NON_STD_FIELD
-#define GHS_NON_STD_FIELD 1
+#define DS_RX_CODEWORD 1
 #endif
 
 #elif defined(OBJSFX_ar0700mp_diagobj)
@@ -582,12 +643,6 @@
 #ifndef BITSWAP
 #define BITSWAP 0
 #endif
-#ifndef CO_PROFILE
-#define CO_PROFILE 0
-#endif
-#ifndef DMT_BIS
-#define DMT_BIS 0
-#endif
 #ifndef MARGIN_DELTA_RETRAIN
 #define MARGIN_DELTA_RETRAIN 0
 #endif
@@ -598,7 +653,7 @@
 #define OAM_EOC 0
 #endif
 #ifndef OLAYDP
-#define OLAYDP 0
+#define OLAYDP 1
 #endif
 #ifndef SNR_UPDATE
 #define SNR_UPDATE 0
@@ -608,9 +663,6 @@
 #endif
 #ifndef ADSL2_BSWP
 #define ADSL2_BSWP 0
-#endif
-#ifndef DMT_BIS
-#define DMT_BIS  0
 #endif
 #ifndef DS_RX_CODEWORD
 #define DS_RX_CODEWORD 0
@@ -678,9 +730,6 @@
 #ifndef AOC
 #define AOC 1
 #endif
-#ifndef ARTT
-#define ARTT 0
-#endif
 #ifndef ATMBERT
 #define ATMBERT 0
 #endif
@@ -709,20 +758,11 @@
 #ifndef BITSWAP
 #define BITSWAP 1
 #endif
-#ifndef COMB_LINEDIAG_ENABLE
-#define COMB_LINEDIAG_ENABLE  0
-#endif
-#ifndef CODEC_EMU
-#define CODEC_EMU 0
-#endif
-#ifndef CO_PROFILE
-#define CO_PROFILE 1
-#endif
-#ifndef DDC
-#define DDC 0
+#ifndef TRELLIS
+#define TRELLIS 1
 #endif
 #ifndef DEBUG_ADSL2
-#define DEBUG_ADSL2 0 
+#define DEBUG_ADSL2 0
 #endif
 #ifndef DEBUG_DUMP
 #define DEBUG_DUMP 0
@@ -742,32 +782,18 @@
 #ifndef LOOP_BACK_DEBUG
 #define LOOP_BACK_DEBUG 0
 #endif
+
 #ifndef US_LOOP_BACK
 #define US_LOOP_BACK 0
 #endif
-#ifndef DPLL_MODE
-#define DPLL_MODE 0
-#endif
-#ifndef DSPBIOSII
-#define DSPBIOSII 0
-#endif
-#ifndef DMT_BIS
-#define DMT_BIS 1
-#endif
 #ifndef ADSL2_1BIT_TONE
-#define ADSL2_1BIT_TONE 0
+#define ADSL2_1BIT_TONE 1
 #endif
 #ifndef ADSL2_BSWP
 #define ADSL2_BSWP 1
 #endif
 #ifndef MEM_STR
 #define MEM_STR 0
-#endif
-#ifndef DS_PWR_CUTBACK
-#define DS_PWR_CUTBACK 0
-#endif
-#ifndef DUAL_TEQ
-#define DUAL_TEQ 1
 #endif
 #ifndef EXTERNBERT
 #define EXTERNBERT 0
@@ -784,14 +810,8 @@
 #ifndef ISDN_DEBUG
 #define ISDN_DEBUG 0
 #endif
-#ifndef LINE_DIAG
-#define LINE_DIAG 1
-#endif
 #ifndef LOOP_BACK_DEBUG
 #define LOOP_BACK_DEBUG 0
-#endif
-#ifndef MANUFACTURING_TESTS
-#define MANUFACTURING_TESTS 0
 #endif
 #ifndef MARGIN_DELTA_RETRAIN
 #define MARGIN_DELTA_RETRAIN 1
@@ -802,9 +822,6 @@
 #ifndef MFGR_DIAG
 #define MFGR_DIAG 0
 #endif
-#ifndef NLNOISEADJSNR
-#define NLNOISEADJSNR 0
-#endif
 #ifndef NLNOISEADJSNR_EC
 #define NLNOISEADJSNR_EC 0
 #endif
@@ -814,53 +831,23 @@
 #ifndef OAM_EOC
 #define OAM_EOC 1
 #endif
+#ifndef OHIO_SUPPORT
+#define OHIO_SUPPORT 1
+#endif
 #ifndef OLAYDP
 #define OLAYDP 0
-#endif
-#ifndef OLAYDP_EMIF
-#define OLAYDP_EMIF 0
-#endif
-#ifndef OLAYDP_2STEP
-#define OLAYDP_2STEP 0
-#endif
-#ifndef OLAYDP_PCI
-#define OLAYDP_PCI 0
 #endif
 #ifndef OUTBAND
 #define OUTBAND 0
 #endif
-#ifndef OVHD_PMDTEST_PARA
-#define OVHD_PMDTEST_PARA 0
-#endif
 #ifndef PERTONE_EQ
 #define PERTONE_EQ 0
-#endif
-#ifndef PHY_EC_ENABLE
-#define PHY_EC_ENABLE 1
-#endif
-#ifndef PHY_HYB_ENABLE
-#define PHY_HYB_ENABLE 1
-#endif
-#ifndef PHY_NDIAG_ENABLE
-#define PHY_NDIAG_ENABLE 0
-#endif
-#ifndef PHY_PATH_ENABLE
-#define PHY_PATH_ENABLE 1
 #endif
 #ifndef PHY_TDW_ENABLE
 #define PHY_TDW_ENABLE 0
 #endif
-#ifndef TC_ATM_PCIMASTER
-#define TC_ATM_PCIMASTER 0
-#endif
-#ifndef SEPARATE_TX_RX_BUFFERS
-#define SEPARATE_TX_RX_BUFFERS 0
-#endif
 #ifndef SHALF
 #define SHALF 0
-#endif
-#ifndef SPECTRAL_SHAPING
-#define SPECTRAL_SHAPING 1
 #endif
 #ifndef SNR_UPDATE
 #define SNR_UPDATE 1
@@ -874,35 +861,81 @@
 #ifndef TESTMODE
 #define TESTMODE 0
 #endif
-#ifndef TRELLIS
-#define TRELLIS 1
+
+#if (!MFGR_DIAG)   //(CQ:10242)
+#define DBG_RTT 1
+#else // (#if MFGR_DIAG)
+#define DBG_RTT 0
+#endif // (#if MFGR_DIAG)
+
+#ifndef RTT_DATA_MEMORY_ENABLE
+#define RTT_DATA_MEMORY_ENABLE 1
 #endif
+#ifndef RTT_AFE_SAMPLES_PATH0_ENABLE
+#define RTT_AFE_SAMPLES_PATH0_ENABLE 1
+#endif
+#ifndef RTT_FFT_DOWNSTREAM_PATH0_ENABLE
+#define RTT_FFT_DOWNSTREAM_PATH0_ENABLE 1
+#endif
+#ifndef RTT_CONSTELLATION_US_ENABLE
+#define RTT_CONSTELLATION_US_ENABLE 0
+#endif
+#ifndef RTT_CONSTELLATION_DS_ENABLE
+#define RTT_CONSTELLATION_DS_ENABLE 0
+#endif
+#ifndef RTT_VCXO_IN_HEADER
+#define RTT_VCXO_IN_HEADER 1
+#endif
+
 #ifndef TXDF2B_PROFILING
-#if (SERVICE_POTS & (!MFGR_DIAG) & (CO_PROFILE))
+
+#if (SERVICE_POTS)
+
+#if (!MFGR_DIAG)
 #define TXDF2B_PROFILING 1
-#else
+#else // (!MFGR_DIAG)
 #define TXDF2B_PROFILING 0
-#endif
-#endif
+#endif // (#if !MFGR_DIAG)
+
+#else // (#if SERVICE_POTS)
+#define TXDF2B_PROFILING 0
+#endif // (#if SERVICE_POTS)
+
+#endif // (#ifndef TXDF2B_PROFILING)
+
 #ifndef US_CRC_RETRAIN
 #define US_CRC_RETRAIN 1
 #endif
 #ifndef US_LOOP_BACK
 #define US_LOOP_BACK 0
 #endif
-#ifndef USB
-#define USB 0
-#endif
-#ifndef READSL2_ENABLE
-#define READSL2_ENABLE 1
+#ifndef ATM_TC_DBG
+#define ATM_TC_DBG  1
 #endif
 
-// Interop tokens
-#ifndef GHS_NON_STD_FIELD
-#define GHS_NON_STD_FIELD 0
+#ifndef RFI_DISPLAY
+#define RFI_DISPLAY  0
 #endif
-#ifndef LUCENT_ANYMEDIA_ENIATT_INTEROP
-#define LUCENT_ANYMEDIA_ENIATT_INTEROP 0
+
+#ifndef ADSL2_GhsRA_DBG
+#define ADSL2_GhsRA_DBG  3  // Debug level 1, 2, 3
+#endif
+
+//UR8_MERGE_START CQ10202 Nima Ferdosi
+#ifndef TI_INTERNAL1
+#define TI_INTERNAL1 0 
+#endif
+//UR8_MERGE_END CQ10202
+
+
+// Control inclusion of CLI code to handle memory read/write
+// Diag module will not build with this flag set 4/28/05 ML
+#ifndef DBG_CLI_MEMORY_ACCESS
+#define DBG_CLI_MEMORY_ACCESS 0
+#endif
+
+#ifndef DBG_CLI_REDIRECT  //(CQ:10242)
+#define DBG_CLI_REDIRECT 1
 #endif
 
 
@@ -921,6 +954,13 @@
 #ifndef LNK_CMD
 extern int compile_happy;  // Keep the compiler from complaining about an empty file
 #endif
-
+//UR8_MERGE_START CQ10786  KC
+#define CNXT_ADSL1_128K_FAIL_FIX 1
+#ifdef CNXT_ADSL1_128K_FAIL_FIX
+  #define CNXT_ADSL1_128K_FAIL_FIX_BIT_ALLOCATED_START_TONE_47 47
+  #define CNXT_ADSL1_128K_FAIL_FIX_RATE_160K 40//4*40=160= 128+32kbps
+  #define ATUR_RELINK 0
 #endif
+//UR8_MERGE_END CQ10786  KC
+#endif // _ENV_DEF_DEFINES_H_
 

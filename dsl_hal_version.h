@@ -7,14 +7,14 @@
 ********************************************************************************
 * FILE NAME:        dsl_hal_basicapi.c
 *
-* DESCRIPTION:  
+* DESCRIPTION:
 *       Contains basic DSL HAL APIs for Sangam
-*  
+*
 * (C) Copyright 2003-04, Texas Instruments, Inc.
 *    History
 *    Date        Version            Notes
 *    14May03     0.00.00            RamP   Original Version Created
-*    14May03     0.00.01            RamP   Initial Rev numbers inserted 
+*    14May03     0.00.01            RamP   Initial Rev numbers inserted
 *    14May03     0.00.02            RamP   Bumped version numbers for Dsl Hal
 *                                          & dhalapp for alpha plus
 *    19May03     0.00.03            MCB    Bumped dslhal version number
@@ -22,7 +22,7 @@
 *                                          wrt. linux-nsp atm drivers.
 *    22May03     0.00.04            RamP   Bumped dslhal & dhalapp buildnum
 *                                          for inner/outer pair & DGASP code
-*    06Jun03     0.00.05            RamP   Bumped up buildnum for LED, STM, 
+*    06Jun03     0.00.05            RamP   Bumped up buildnum for LED, STM,
 *                                          interrupt processing, statistics
 *                                          and other pre-beta features
 *    09Jun03     0.00.06            JEB    Fixed error in DHALAPP bugfix/buildnum
@@ -64,31 +64,66 @@
 *    15Jan04     0.00.33            JEB    Bumped build numbers on DSLHAL and Linux ATM for CHECKPOINT 36.
 *    26Jan04     0.00.34            JEB    Changed Linux ATM version number to be 04.02.03.00.
 *    27Jan04     0.00.35            MCB    Bumped all version numbers in support of D3R2 release.
+*    29Jan04     0.00.36            MCB    Bumped version numbers in support of D3R2 release.
+*    04Feb04     0.00.37            JEB    Changed DSLAGENT version numbers for the latest code updates.
+*    14Feb04     0.00.38            MCB    Bumped version numbers in support of MFGDIAG 1.0 release.
+*    25Feb04     0.00.39            ZT     Bumped version numbers for Linux ATM driver and DHAL
+*    08Mar04     0.00.40            JEB    Changed version numbers for DSLHAL and DHALAPP to 03.00.50.01 for DSM
+*    30Mar04     0.00.41            JEB    Fixed DSLAGENT version number back to 02.01.01.00.
+*    30Mar04     0.00.42            VRB    Bumped the build number for Linux ATM driver
+*    30Mar04     0.00.43            MCB    Bumped version numbers in support of LINUXDSLPSP4.2-R2 release.
+*    05Apr04     0.00.44            JEB    Bumped build numbers on DSLHAL and DSLAGENT for CHECKPOINT50.
+*    26Apr04     0.00.45            JEB    Brought back correct version numbers on CPEdallas_Ax7_ADSL\LATEST
+*                                          and fixed the LINUXATM driver version to represent the latest
+*    29Apr04     0.00.46            JEB    Bumped build numbers on DSLHAL and DSLAGENT for CHECKPOINT51.
+*    14May04     0.00.47            SV     Bumped build numbers on DSLHAL and DSLAGENT for CHECKPOINT52.
+*    17May04     0.00.48            ZT     Bumped build number on the Linux ATM driver.
+*    18May04     0.00.49            MCB    Bumped version numbers in support of LINUXDSLPSP4.2-R1.2 release.
+*    24May04     0.00.50            MCB    Bumped version numbers in support of CPE Agent 2.1 R1 release.
+*    01Jun04     0.00.51            MCB    Bumped version numbers in support of SCM_20040601_CPEdallas_Ax7_ADSL2_CHECKPOINT53.
+*    02Jun04     0.00.52            JLP    Bumped version numbers in support of CPE Agent 2.1 R2 release.
+*    11Jun04     0.00.53            RamP   Bumped version numbers in support of Linux PSP R2-5
+*    16Jun04     0.00.54            SV     Changed DSLHAL and DHALAPP version numbers for D3.1R2 release
+*    23Jun04     0.00.55            Ram    Bumped build number for Linux ATM driver integration Checkpoint 009
+*    24Jun04     0.00.56            Ram    Bumped build number for Linux ATM driver for PSP 4.2L R3
+*    06Jul04     0.00.57            JEB    Bumped the bugfix number for DSLAGENT for ADSL2 CHECKPOINT55
+*    07Jul04     0.00.58            MCB    Moved ATM Linux driver version info to it's own file.
+*    20Jul04     0.00.59            MCB    Bumped version numbers in support of CPE Agent 2.1 CHECKPOINT004.
+*    29Jul04     0.00.60            RamP   Bumped version numbers for D3.2R0.
+*                                    /SM
+*    09Aug04     0.00.61            RamP   Updated build number for DSL HAL in prep of Linux PSP R2-3
+*    25Aug04     0.00.62            RamP   Updated build number for DSL HAL in prep of Linux PSP R2-4
+*    27Aug04     0.00.63            JEB    Bumped DSLHAL version number for D3.2R1 release.
+*    02Sep04     0.00.66            RamP   Bumped DSLHAL and DHALAPP version numbers.
+*                                    /SM
+*    21Sep04     0.00.67            Ramp/CGH Bumped DSLHAL version number from D3.2.1.1 to D3.2.1.2
+*    04Oct04     0.00.68            CGH    Bumped DSLHAL version number from D3.2.1.2 to D3.2.1.3
+*    10Oct04     0.00.69            CGH    Bumped DSLHAL version number from D3.2.1.3 to D3.2.1.4
+*    10Oct04     0.00.70            CGH    Bumped DHALAP version number from D3.2.0.1 to D3.2.0.2
+*    12Oct04     0.00.71            GKD    Bumped DHALAP version number from D3.2.0.1 to D3.2.4.0
+*    20Oct04     0.00.72            MCB    Bumped version numbers in support of D4.0 R0
+*    27Oct04     0.00.73            JEB    Bumped DSLHAL/DHALAPP version numbers to 04.00.00.02 for ADSL2 CHECKPOINT73
+*                                          Fixed DSLAGENT version number to reflect the current DSLAGENT present.
+*    16Feb04     0.00.74            CPH    Bumped DHALAP & DHAL version to 04.00.00.03 for Ohio250 support
 *******************************************************************************/
 
 /* Dsl Hal API Version Numbers */
-#define DSLHAL_VERSION_MAJOR       03
-#define DSLHAL_VERSION_MINOR       00
-#define DSLHAL_VERSION_BUGFIX      06
-#define DSLHAL_VERSION_BUILDNUM    00
-#define DSLHAL_VERSION_TIMESTAMP   00
+#define DSLHAL_VERSION_MAJOR       07
+#define DSLHAL_VERSION_MINOR       01
+#define DSLHAL_VERSION_BUGFIX      00
+#define DSLHAL_VERSION_BUILDNUM    8
+#define DSLHAL_VERSION_TIMESTAMP   03
 
 /* dhalapp Adam2 Application Version Numbers */
-#define DHALAPP_VERSION_MAJOR      03
-#define DHALAPP_VERSION_MINOR      00
-#define DHALAPP_VERSION_BUGFIX     05
-#define DHALAPP_VERSION_BUILDNUM   00
-
-/* Linux ATM Driver Version Numbers */
-#define LINUXATM_VERSION_MAJOR     04
-#define LINUXATM_VERSION_MINOR     02
-#define LINUXATM_VERSION_BUGFIX    04
-#define LINUXATM_VERSION_BUILDNUM  00
+#define DHALAPP_VERSION_MAJOR      07
+#define DHALAPP_VERSION_MINOR      01
+#define DHALAPP_VERSION_BUGFIX     00
+#define DHALAPP_VERSION_BUILDNUM   02
 
 /* DSL Agent Version Numbers */
 #define DSLAGENT_VERSION_MAJOR     02
-#define DSLAGENT_VERSION_MINOR     00
-#define DSLAGENT_VERSION_BUGFIX    02
-#define DSLAGENT_VERSION_BUILDNUM  00
+#define DSLAGENT_VERSION_MINOR     01
+#define DSLAGENT_VERSION_BUGFIX    05
+#define DSLAGENT_VERSION_BUILDNUM  01
 
 #endif /* pairs with #ifndef __SYSSW_VERSION_H__ */

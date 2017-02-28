@@ -7,10 +7,10 @@
 ********************************************************************************
 * FILE NAME:        dsl_hal_functiondefines.c
 *
-* DESCRIPTION:  
+* DESCRIPTION:
 *       Contains basic DSL HAL API declarations for Sangam
-*  
-*                    
+*
+*
 * (C) Copyright 2001-02, Texas Instruments, Inc.
 *    History
 *    Date        Version            Notes
@@ -25,7 +25,7 @@
 *    15Apr03     0.00.06            RamP   Added function osAllocateVMemory
 *    21Apr03     0.01.00            RamP   Added function osAllocateDmaMemory
 *                                          Added function osFreeDmaMemory
-*                (Alpha)                   Added macro virtual2Physical, 
+*                (Alpha)                   Added macro virtual2Physical,
 *    22Apr03     0.01.01            RamP   Moved acknowledgeInterrupt to api.h
 *    24Apr03     0.01.02            RamP   Added checkOvelayPage function
 *    29May03     0.01.03            RamP   Added critical enter/exit function decl
@@ -33,9 +33,23 @@
 *    06Oct03     0.01.05            RamP   Added function abstraction switches
 *    12Oct03     0.01.06            RamP   Added ADSL2 Message function prototypes
 *    14Nov03     0.03.07            RamP   Added function to gather Rate Messages
+*    29Apr04     0.03.08            RamP   Added function to determine dsNumTones
+*    26Aug04     0.03.09            Brian  Made changes to support switching DSP
+*                                          frequency to 250Mhz
+*    14June05    0.03.10            CPH    Added dslhal_support_getTrainedModeEx()
+*    20Jul05     0.03.11            CPH    Added dslhal_support_shortSwap32()
+*    26Jul05     0.05.00            CPH    - Added dslhal_support_getTrainedMode(),
+*                                            dslhal_support_readInternalOffset(),
+*                                            dslhal_support_readOffset(),
+*                                            dslhal_support_getNumUsTones()
+*                                          - Rename dslhal_support_getNumTones() to dslhal_support_getNumDsTones()
+*    7 Oct05     0.06.00            AV/CPH  Changed dprintf to dgprintf and compile time
+*                                           selection of dslhal_api_getQLNpsds() dslhal_api_getSNRpsds()
+*                                           and for code size reduction.
+*    04Nov05     0.11.00            CPH    Fixed T1413 mode got Zero DS/US rate when DSL_BIT_TMODE is set.
 *******************************************************************************/
 
-#include "dsl_hal_api.h"
+#include <dsl_hal_api.h>
 
 #define virtual2Physical(a)    (((int)a)&~0xe0000000)
 /* External Function Prototype Declarations */
@@ -47,6 +61,23 @@ extern unsigned int shim_osClockTick(void);
 extern int shim_osStringCmp(const char *s1, const char *s2);
 
 extern void dprintf( int uDbgLevel, char * szFmt, ...);
+
+/*
+#ifdef DEBUG_BUILD
+#define dgprintf(uDbgLevel, szFmt, ...) dprintf(uDbgLevel, szFmt, ...)
+#else
+#define dgprintf(uDbgLevel, szFmt, ...)
+#endif
+*/
+
+
+#ifdef DEBUG_BUILD
+#define dgprintf dprintf
+#else
+#define dgprintf(uDbgLevel, szFmt, args...)
+#endif
+
+
 
 extern int shim_osLoadFWImage(unsigned char *firmwareImage);
 extern int shim_osLoadDebugFWImage(unsigned char *debugFirmwareImage);
@@ -84,10 +115,10 @@ extern void shim_osCriticalExit(void);
 *******************************************************************************************/
 
 int dslhal_support_writeHostMailbox
-(tidsl_t *ptidsl, 
- int cmd, 
- int tag, 
- int p1, 
+(tidsl_t *ptidsl,
+ int cmd,
+ int tag,
+ int p1,
  int p2);
 
 /********************************************************************************************
@@ -105,10 +136,10 @@ int dslhal_support_writeHostMailbox
 *****************************************************************************************/
 
 int dslhal_support_readDspMailbox
-(tidsl_t *ptidsl, 
- int *pcmd, 
- int *ptag, 
- int *pprm1, 
+(tidsl_t *ptidsl,
+ int *pcmd,
+ int *ptag,
+ int *pprm1,
  int *pprm2);
 
 /********************************************************************************************
@@ -126,10 +157,10 @@ int dslhal_support_readDspMailbox
 *****************************************************************************************/
 
 int dslhal_support_readTextMailbox
-(tidsl_t *ptidsl, 
- int *pmsg1, 
+(tidsl_t *ptidsl,
+ int *pmsg1,
  int *pmsg2);
- 
+
 /******************************************************************************************
 * FUNCTION NAME:    dslhal_support_blockRead
 *
@@ -146,15 +177,15 @@ int dslhal_support_readTextMailbox
 *****************************************************************************************/
 
 int dslhal_support_blockRead
-(void *addr, 
- void *buffer, 
+(void *addr,
+ void *buffer,
  size_t count);
 
 /******************************************************************************************
 * FUNCTION NAME:    dslhal_support_blockWrite
 *
 *******************************************************************************************
-* DESCRIPTION: This rouin simulates DSP memory write as done in ax5 pci nic card 
+* DESCRIPTION: This rouin simulates DSP memory write as done in ax5 pci nic card
 *
 * INPUT:  void *buffer, data need to written
 *         void *adde,   memory address to be written
@@ -166,25 +197,25 @@ int dslhal_support_blockRead
 *****************************************************************************************/
 
 int dslhal_support_blockWrite
-(void *buffer, 
- void *addr, 
+(void *buffer,
+ void *addr,
  size_t count);
 
 /******************************************************************************************
 * FUNCTION NAME:    dslhal_support_hostDspAddressTranslate
 *
 *******************************************************************************************
-* DESCRIPTION: This function moves the address window to translate physical address 
+* DESCRIPTION: This function moves the address window to translate physical address
 *
 * INPUT:  unsigned int addr : address that requires translation
 *
 * RETURN:  Translated address or error condition
-*          
+*
 *
 *****************************************************************************************/
 
 unsigned int dslhal_support_hostDspAddressTranslate
-( unsigned int addr 
+( unsigned int addr
 );
 
 /******************************************************************************************
@@ -250,6 +281,21 @@ int dslhal_support_resetDsp
 (void
 );
 
+/********************************************************************************************
+* FUNCTION NAME: dslhal_support_setDsp250MHzTrigger(void)
+*
+*********************************************************************************************
+* DESCRIPTION:
+*   Set the trigger to run DSP at 250Mhz.
+*
+* Input:  none
+*
+* Return: >=0, success
+*         -1,  failure
+*
+*
+********************************************************************************************/
+int dslhal_support_setDsp250MHzTrigger(tidsl_t *ptidsl);
 
 /********************************************************************************************
 * FUNCTION NAME: dslhal_support_hostDspCodeDownload()
@@ -260,23 +306,23 @@ int dslhal_support_resetDsp
 *
 * Return: 0  success
 *         1  failed
-* 
-* NOTE: 
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
 
 int dslhal_support_hostDspCodeDownload
-(tidsl_t * ptidsl 
+(tidsl_t * ptidsl
 );
 
 /********************************************************************************************
 * FUNCTION NAME: dslhal_diags_digi_assignMemTestSpace()
 *
 *********************************************************************************************
-* DESCRIPTION: Assigns Memory Space in SDRAM for External Memory Test 
+* DESCRIPTION: Assigns Memory Space in SDRAM for External Memory Test
 * Input: tidsl_t *ptidsl
-* 
+*
 * Return: 0    success
 *         1    failed
 *
@@ -290,9 +336,9 @@ unsigned int dslhal_diags_digi_assignMemTestSpace
 * FUNCTION NAME: dslhal_diags_digi_readMemTestResult()
 *
 *********************************************************************************************
-* DESCRIPTION: Reads Results of External Memory Test 
+* DESCRIPTION: Reads Results of External Memory Test
 * Input: tidsl_t *ptidsl
-* 
+*
 * Return: 0    success
 *         1    failed
 *
@@ -308,10 +354,10 @@ unsigned int testResult
 * FUNCTION NAME: dslhal_diags_codeDownload()
 *
 *********************************************************************************************
-* DESCRIPTION: Brings DSLSS out of Reset, Downloads Diag Firmware, 
-*              brings DSP out of Reset 
+* DESCRIPTION: Brings DSLSS out of Reset, Downloads Diag Firmware,
+*              brings DSP out of Reset
 * Input: tidsl_t *ptidsl
-* 
+*
 * Return: 0    success
 *         1    failed
 *
@@ -327,21 +373,21 @@ unsigned char* missingTones
 *
 *********************************************************************************************
 * DESCRIPTION: This function instructs the Transciever to transmit the Reverb with missing
-*              tones and Medley's with missing tones. These signals are defined in ITU 
+*              tones and Medley's with missing tones. These signals are defined in ITU
 *              G.992.1 ADSL Standards.
 *
 * Input: Test selects between the Reverb or Medley tests. 0 - Reverb, 1 - Medley
 *        Tones selects the .
 * Return: NULL
-*         
+*
 ********************************************************************************************/
 
 unsigned int  dslhal_diags_anlg_setPgaParams
 (tidsl_t *ptidsl,
 int agcFlag,
-short pga1, 
-short pga2, 
-short pga3, 
+short pga1,
+short pga2,
+short pga3,
 short aeq
 );
 
@@ -350,13 +396,13 @@ short aeq
 *
 *********************************************************************************************
 * DESCRIPTION: This function instructs the Transciever to transmit the Reverb with missing
-*              tones and Medley's with missing tones. These signals are defined in ITU 
+*              tones and Medley's with missing tones. These signals are defined in ITU
 *              G.992.1 ADSL Standards.
 *
 * Input: Test selects between the Reverb or Medley tests. 0 - Reverb, 1 - Medley
 *        Tones selects the .
 * Return: NULL
-*         
+*
 ********************************************************************************************/
 
 unsigned int dslhal_diags_anlg_getRxNoisePower
@@ -368,13 +414,13 @@ unsigned int dslhal_diags_anlg_getRxNoisePower
 *
 *********************************************************************************************
 * DESCRIPTION: This function instructs the Transciever to transmit the Reverb with missing
-*              tones and Medley's with missing tones. These signals are defined in ITU 
+*              tones and Medley's with missing tones. These signals are defined in ITU
 *              G.992.1 ADSL Standards.
 *
 * Input: Test selects between the Reverb or Medley tests. 0 - Reverb, 1 - Medley
 *        Tones selects the .
 * Return: NULL
-*         
+*
 ********************************************************************************************/
 
 unsigned int dslhal_diags_anlg_setMissingTones
@@ -391,8 +437,8 @@ unsigned char* missingTones
 *
 * Return: 0  success
 *         1  failed
-* 
-* NOTE: 
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
@@ -409,8 +455,8 @@ unsigned int dslhal_support_readDelineationState
 *
 * Return: 0  success
 *         1  failed
-* 
-* NOTE: 
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
@@ -427,8 +473,8 @@ unsigned int dslhal_support_processModemStateBitField
 *
 * Return: 0  success
 *         1  failed
-* 
-* NOTE: 
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
@@ -446,14 +492,14 @@ unsigned int inputMask
 *   Computes the CRC-32 for the input data
 *
 * Return: 32 bit CRC of the input data
-*      
-* 
-* NOTE: 
+*
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
 unsigned int dslhal_support_computeCrc32
-(unsigned char *data, 
+(unsigned char *data,
 int len
 );
 
@@ -465,14 +511,14 @@ int len
 *   Computes the CRC-32 for the input data and compares it with reference
 *
 * Return: Error Condition (if any)
-*      
-* 
-* NOTE: 
+*
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
 unsigned int dslhal_support_checkOverlayPage
-(tidsl_t *ptidsl, 
+(tidsl_t *ptidsl,
 unsigned int tag
 );
 
@@ -484,9 +530,9 @@ unsigned int tag
 *   Computes the CRC-32 for the input data and compares it with reference
 *
 * Return: Error Condition (if any)
-*      
-* 
-* NOTE: 
+*
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
@@ -501,9 +547,9 @@ int dslhal_support_restoreTrainingInfo(tidsl_t * ptidsl);
 *   Computes the CRC-32 for the input data and compares it with reference
 *
 * Return: Error Condition (if any)
-*      
-* 
-* NOTE: 
+*
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
@@ -518,9 +564,9 @@ int dslhal_support_reloadTrainingInfo(tidsl_t * ptidsl);
 *   Computes the CRC-32 for the input data and compares it with reference
 *
 * Return: Error Condition (if any)
-*      
-* 
-* NOTE: 
+*
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
@@ -536,8 +582,8 @@ int dslhal_support_clearTrainingInfo(tidsl_t * ptidsl);
 *
 * Return: 0  success
 *         1  failed
-* 
-* NOTE: 
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
@@ -551,9 +597,9 @@ unsigned int dslhal_support_parseInterruptSource(tidsl_t * ptidsl);
 *   Calls Advanced Idle State Processing Functions
 *
 * Return: Error Condition (if any)
-*      
-* 
-* NOTE: 
+*
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
@@ -567,9 +613,9 @@ unsigned int dslhal_support_advancedIdleProcessing(tidsl_t *ptidsl);
 *   Calls Advanced Bitswap buffer Processing Functions
 *
 * Return: Error Condition (if any)
-*      
-* 
-* NOTE: 
+*
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
@@ -583,9 +629,9 @@ unsigned int dslhal_support_aocBitSwapProcessing(tidsl_t *ptidsl,unsigned int us
 *   Calls Advanced EOC Buffering functions
 *
 * Return: Error Condition (if any)
-*      
-* 
-* NOTE: 
+*
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
@@ -599,9 +645,9 @@ unsigned int dslhal_support_gatherEocMessages(tidsl_t *ptidsl,int usDs, int msgP
 *   Calls Advanced Snr per bin buffering Functions
 *
 * Return: Error Condition (if any)
-*      
-* 
-* NOTE: 
+*
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
@@ -615,9 +661,9 @@ unsigned int dslhal_support_gatherSnrPerBin(tidsl_t *ptidsl,unsigned int snrParm
 *   Calls Advanced Training State Processing Functions
 *
 * Return: Error Condition (if any)
-*      
-* 
-* NOTE: 
+*
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
@@ -631,9 +677,9 @@ unsigned int dslhal_support_processTrainingState(tidsl_t *ptidsl);
 *   Calls Advanced EOC Buffering functions
 *
 * Return: Error Condition (if any)
-*      
-* 
-* NOTE: 
+*
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
@@ -647,9 +693,9 @@ unsigned int dslhal_support_gatherAdsl2Messages(tidsl_t *ptidsl,int msgTag, int 
 *   Gets the address to the ADSL2 Message being looked up
 *
 * Return: Error Condition (if any)
-*      
-* 
-* NOTE: 
+*
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
@@ -663,13 +709,37 @@ unsigned int dslhal_support_getAdsl2MessageLocation(tidsl_t *ptidsl,int msgOffse
 *   Calls Advanced Training Message functions
 *
 * Return: Error Condition (if any)
-*      
-* 
-* NOTE: 
+*
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
 unsigned int dslhal_support_getCMsgsRa(tidsl_t *ptidsl,void *cMsg);
+
+/********************************************************************************************
+* FUNCTION NAME: dslhal_support_getMaxDsTones()
+*
+*********************************************************************************************
+* DESCRIPTION:
+*   Gets Number of Down Stream tones
+* Return: 256 or 512
+*
+********************************************************************************************/
+unsigned int dslhal_support_getMaxDsTones(tidsl_t *ptidsl);
+
+unsigned int dslhal_support_getNumTones(tidsl_t *ptidsl); // Kept for backward compatible
+
+/********************************************************************************************
+* FUNCTION NAME: dslhal_support_getMaxUsTones()
+*
+*********************************************************************************************
+* DESCRIPTION:
+*   Gets Number of Up Stream tones
+* Return: 256 or 512
+*
+********************************************************************************************/
+unsigned int dslhal_support_getMaxUsTones(tidsl_t *ptidsl);
 
 /********************************************************************************************
 * FUNCTION NAME: dslhal_support_gatherRateMessages()
@@ -679,9 +749,9 @@ unsigned int dslhal_support_getCMsgsRa(tidsl_t *ptidsl,void *cMsg);
 *   Gathers Advanced Training Messages
 *
 * Return: Error Condition (if any)
-*      
-* 
-* NOTE: 
+*
+*
+* NOTE:
 *   DSP image is based on LITTLE endian
 *
 ********************************************************************************************/
@@ -692,9 +762,9 @@ unsigned int dslhal_support_gatherRateMessages(tidsl_t *ptidsl);
 *
 *********************************************************************************************
 * DESCRIPTION:
-* byteswap a short  
-* 
-* INPUT: 
+* byteswap a short
+*
+* INPUT:
 * Return: NULL
 *
 ********************************************************************************************/
@@ -706,13 +776,103 @@ unsigned short dslhal_support_byteSwap16(unsigned short in16Bits);
 *
 *********************************************************************************************
 * DESCRIPTION:
-*   byteswap a word
-* 
-* INPUT: 
+*   byteswap within 32 bit unsigned integer
+*
+* INPUT: unsigned 32 bit integer
+*
+* Return: Byte Swapped 32 bit integer
+*      B0|B1|B2|B3 -> B3|B2|B1|B0  (where B0..B3 is byte(8bit) data within unsigned int32)
+*
+* Note: The function will do the swap when MIPS code is compiled as Big Endian
+*       For little endian, the result is the same as input.
+********************************************************************************************/
+unsigned int dslhal_support_byteSwap32_BE (unsigned int in32Bits);
+
+#ifndef EB
+#define dslhal_support_byteSwap32(x) ((unsigned int) (x))
+#else
+#define dslhal_support_byteSwap32 dslhal_support_byteSwap32_BE
+#endif
+
+/********************************************************************************************
+* FUNCTION NAME: dslhal_support_shortSwap32()
+*
+*********************************************************************************************
+* DESCRIPTION:
+*   shortswap within 32 bit unsigned integer
+*
+* INPUT: unsigned 32 bit integer
+*
+* Return: Short Swapped 32 bit integer
+*   S0|S1 -> S1|S0 (where S0,S1 is unsigned short (16bit)data within unsigned int32)
+*
+* Note: The function will do the swap when MIPS code is compiled as Big Endian
+*       For little endian, the result is the same as input.
+********************************************************************************************/
+
+unsigned int dslhal_support_shortSwap32(unsigned int in32Bits);
+
+/********************************************************************************************
+* FUNCTION NAME: dslhal_support_getTrainedModeEx()
+*
+*********************************************************************************************
+* DESCRIPTION:
+*  Construced the Extended (32bits) TrainedMode
+*
+* INPUT:
 * Return: NULL
 *
 ********************************************************************************************/
+unsigned int dslhal_support_getTrainedMode (tidsl_t *ptidsl);
+unsigned int dslhal_support_getTrainedModeEx(unsigned int trainMode, unsigned int annex_sel);
 
-unsigned int dslhal_support_byteSwap32(unsigned int in32Bits);
+/********************************************************************************************
+* FUNCTION NAME: dslhal_support_readOffset
+*
+*********************************************************************************************
+* DESCRIPTION:
+*   Read 32 bit endian converted value from Host-DSP Interface based on offset array.
+*  (Internal Used Only)
+*
+* INPUT: offsetnum: # entries in *offset array follows.
+*        *offset: offset table.
+* Return: 32 bit endian converted value.
+*
+********************************************************************************************/
+unsigned int dslhal_support_readOffset(tidsl_t *ptidsl, int offsetnum, int *offset);
+
+/********************************************************************************************
+* FUNCTION NAME: dslhal_support_readInternalOffset
+*
+*********************************************************************************************
+* DESCRIPTION:
+*   Read 32 bit endian converted value from Internal Host-DSP Interface based on offset array.
+*  (Internal Used Only)
+*
+* INPUT: offsetnum: # entries in *offset array follows.
+*        *offset: offset table.
+* Return: 32 bit endian converted value.
+*
+********************************************************************************************/
+unsigned int dslhal_support_readInternalOffset(tidsl_t *ptidsl, int offsetnum, int *offset);
+
+unsigned int dslhal_support_addrFromOffset(tidsl_t *ptidsl, int offsetnum, int *offset, int type);
+unsigned int dslhal_support_writeFromOffset(tidsl_t *ptidsl, int offsetnum, int *offset, unsigned int dat, int type);
+
+/******************************************************************************************
+* FUNCTION NAME:     dslhal_support_IsADSL1Mode
+*
+*******************************************************************************************
+* DESCRIPTION: This function check current train mode see if it's GDMT, T1413, or GLITE.
+*              Detect & take care both old train mode scheme & new train mode scheme.
+*              It is expected the ptidsl->AppData.dsl_modulation is been set before calling
+*              this function.
+*
+* INPUT:  PITIDSLHW_T *ptidsl
+*
+* RETURN: TRUE: It's one of ADSL1 (GDMT, T1413, or GLITE) mode.
+*         FALSE: It's not ADSL1 mode.
+*****************************************************************************************/
+int dslhal_support_IsADSL1Mode(tidsl_t *ptidsl);
 
 #endif /* Pairs #ifndef DSL_HAL_FUNCTIONDEFINES_H__ */

@@ -10,6 +10,8 @@
  *
 */
 
+#if 0
+
 /* defines and variables */
 #define RFC2684_BRIDGED_HDR_SIZE 10
 unsigned char LLC_BRIDGED_HEADER_2684[RFC2684_BRIDGED_HDR_SIZE] =
@@ -94,7 +96,7 @@ typedef struct _turbodsl_tcp_header
  * Function: turbodsl_memory_compare
  * Descripation: Memory compare
  ****************************************************************************/
-int turbodsl_memory_compare(unsigned char *pIn, unsigned char *pOut, unsigned int len)
+__inline__ int turbodsl_memory_compare(unsigned char *pIn, unsigned char *pOut, unsigned int len)
   {
   int i;
   
@@ -112,7 +114,7 @@ int turbodsl_memory_compare(unsigned char *pIn, unsigned char *pOut, unsigned in
  * Input:
  *        unsigned char *pData, AAL5 Packet buffer pointer
  ****************************************************************************/
-int turbodsl_check_aal5_encap_type(unsigned char *pData)
+__inline__ static int turbodsl_check_aal5_encap_type(unsigned char *pData)
   {
   
   if(turbodsl_memory_compare(pData, LLC_BRIDGED_HEADER_2684, 6))
@@ -135,25 +137,26 @@ int turbodsl_check_aal5_encap_type(unsigned char *pData)
  ****************************************************************************/
 int turbodsl_check_priority_type(unsigned char *pData)
   {
-  int encap;
+/*  int encap;*/
   unsigned char *pP;
   unsigned short etherType;
   turbodsl_ip_header_t *pIp;
   turbodsl_tcp_header_t *pTcp;
-  unsigned short ip_length;
+/*  unsigned short ip_length;*/
   
   dprintf(2, "turbodsl_check_priority_type ==>\n");
 
-  encap = turbodsl_check_aal5_encap_type(pData);
+  /*** Viren: Eliminated local VAriable */
+ /* encap = turbodsl_check_aal5_encap_type(pData); */
   pP = pData;
 
-  switch(encap)
+  switch(turbodsl_check_aal5_encap_type(pData))
     {
     case AAL5_ENCAP_RFC2684_LLC_BRIDGED:
       pP += RFC2684_BRIDGED_HDR_SIZE; //skip off aal5 encap
       pP += 12;               //skip of mac address
       etherType = *(unsigned short *)pP;
-      if(etherType != 0x6488 && etherType != 0x0008)
+      if((etherType != 0x6488) && (etherType != 0x0008))
         {
         //Not an IP packet
         return 1;
@@ -171,11 +174,11 @@ int turbodsl_check_priority_type(unsigned char *pData)
       break;
     case AAL5_ENCAP_PPP_LLC:
       pP += sizeof(PPP_LLC_HEADER);
-      if(*pP == 0xff && *(pP+1) == 0x03) //ppp hdlc header
+      if((*pP == 0xff) && (*(pP+1) == 0x03)) //ppp hdlc header
         pP += 2;
       break;
     case AAL5_ENCAP_PPP_VCMUX:
-      if(*pP == 0xff && *(pP+1) == 0x03) //ppp hdlc header
+      if((*pP == 0xff) && (*(pP+1) == 0x03)) //ppp hdlc header
         pP += 2;
       break;
     default:
@@ -197,15 +200,16 @@ int turbodsl_check_priority_type(unsigned char *pData)
   
   pTcp = (turbodsl_tcp_header_t *)(pP + sizeof(turbodsl_ip_header_t));
 
-  ip_length = (pIp->total_length>>8) + (pIp->total_length<<8);
+  /*** Viren: not required ***/
+  /*ip_length = ((pIp->total_length>>8) + (pIp->total_length<<8));*/
   
-  if((pTcp->flags & ACK_FLAG) && ip_length <=40)
+  if((pTcp->flags & ACK_FLAG) && (((pIp->total_length>>8) + (pIp->total_length<<8)) <=40))
     return 0;
 
   return 1;
   }
 
-
+#endif
 
 
 

@@ -173,17 +173,250 @@
 *                            "env_def_defines.h".  We shouldn't have any compile tokens used in this file.
 *                            (the SWTC token is always off in any Ax7 code).
 *  11/14/03  J. Bergsagel    Also removed READSL2_ENABLE token (no more compile tokens to be used in this .h file).
-*  12/12/03  Sameer/Ram      Added DEV_HOST_EOCAOC_INTERRUPT_MASK to enable host to disable response code for AOC/EOC 
+*  12/12/03  Sameer/Ram      Added DEV_HOST_EOCAOC_INTERRUPT_MASK to enable host to disable response code for AOC/EOC
 *                            mailbox messages
-*  12/09/03  Jack Huang      Changed G.hs txbuf size from 60 to 64 to fit the max segment size 
+*  12/09/03  Jack Huang      Changed G.hs txbuf size from 60 to 64 to fit the max segment size
 *  12/15/03  Mallesh         Changed vendor ID type defenition from SINT16 to UINT16
 *  12/23/03  Sameer V        Added ability to turn off constellation display reporting to host using oamFeature bit field.
 *  12/24/03  Sameer V        Changed comment for Constellation Display Current Address to Host Write instead of DSP Write.
-*  12/26/03  Sameer/Ram      Added DEV_HOST_GHSMSG_INTERRUPT_MASK to enable host to disable response code for GHS Messages 
-*  (C) Copyright Texas Instruments Inc. 2002.  All rights reserved.
+*  12/26/03  Sameer/Ram      Added DEV_HOST_GHSMSG_INTERRUPT_MASK to enable host to disable response code for GHS Messages
+*  02/03/04  Mannering       Added token OHIO_SUPPORT
+*  02/24/04  Mannering       Fixed comments on devCodecTxDf2aDen and devCodecTxDf2bDen.
+*  03/08/04  Mallesh         Increased the number of overlay pages to 7.
+*  04/01/04  Sameer          Increased the number of overlay pages to 8.
+*  04/12/04  Sameer          Moved TXDF2B filter coeffs to SDRAM memory. Added mechanism to DMA data back to data memory
+*                            based on the pointer allocated by the host processor.
+*  04/15/04  Umesh Iyer      Added support for including 2 additional overlay pages for training.
+*  04/20/04  U G Jani        Reused dummy2 for EOC selfTestResults results in DEV_HOST_eocVarDef_t typedef.
+*  05/14/04  Mallesh         Added structures for ADSL2 bitswaps
+*  06/11/04  Brian Z. & C.   Added structures for clear EOC HDLC host Rx and Tx buffers
+*  07/09/04  Jack Huang      Added MSE settle time control in CO profile
+*  07/22/04  SV/MH/SM        Added variable to indicate rcvMode.
+*  08/09/04  Jack Huang      Added following control variables in CO profile a) thresholf for ratio of max/min MSE and
+*                            b) threshold of max MSE power.
+*  08/25/04  Sameer V        Added flag to indicate whether DSP runs at 200 v/s 250 Mhz.
+*  08/26/04  Brian Z/S.Yim   Added DEV_HOST_diagAnlgOutputVar_t.rcvMode for Matlab offline data process
+*  10/06/04  Sameer V        Added structure for feature control
+*  03/17/05  T. Leyrer       Replaced reserved1 with maxbits_ds in structure DEV_HOST_msg_t. maxbits_ds is set to the
+*                            minimum between host and CO setting and used for bit allocation and bitswap.
+*  12/28/04  DW              CQ 9356: Modified definitions of phy feature control and enable bits.
+*                            Added interop control and enable bits. Added bit mask definitions.
+*  02/09/05  YH              CQ9459: add interop control and enable bits for SHORT_LOOP_US_ERR_REDUCTION.
+*                            this is for fixing interop issue at CANTV
+*  02/23/05  YH              added interop bit for QWEST_ALCATEL_US_LOW_RATE_FIX
+*                            added interop bit for T1413_LONG_LOOP_ACTIVATION
+                             added interop bit for QWEST_ALCATEL_US_LOW_RATE_FIX
+                             added interop bit for ASB_ETSIB_HIGH_BER_FIX
+                             added interop bit for BELL_CANADA_DOUBLE_BRIDGE_TAP_FIX
+                             added interop bit for BELGACOM_DS_FIX
+                             added interop bit for CINCINNATI_BELL_FIX
+                             added interop bit for FRANCE_TELECOM_FIX
+*  03/31/05  Ragu Pappu      added interop bit for QWEST_US_1M_RATE_FIX
+*  05/20/05  Kapil           Added fields corresponding to AnnexB and AnnexM.
+*                            Added two extra elements in DEV_HOST_dspWrNegoParaDef_t
+*                            structure and one extra element in DEV_HOST_oamWrNegoParaDef_t
+*                            structure. CQ9600.
+*  05/20/05  Venkat R        CQ9600: Added bit field definitions for DEV_HOST_dspWrNegoParaDef_t
+*                            psd_mask_qualifier field
+*  06/14/05  Peter Hou       Added MULTI_MODE8 for backward compatibility
+*                            Added ADSL2_MASKS & ADSL2PLUS_MASKS
+*  07/06/05  Peter Hou       Added ENABLE_BELGACOM_ANXB_FAST_TRAINING as IOP Bit12
+*  07/11/05  Kapil           CQ9600: Cleaned up usage of READSL as per new definitions of
+*                            trainMode.
+*  07/21/05  Kapil           CQ9600: Increase MAX_CMSGPCB2_LENGTH to ensure proper word alignment
+*                            and also to take care of DELT.
+*  07/21/05  Venkat R        CQ9600: Expanded some array sizes in DEV_HOST_olrDspRxDef_t to support
+*                            64 upstream bins.
+*  05/03/05  Hanyu Liu       CQ9500: added interop control and disable bits for SAFEMODE_FOR_G992_3_5
+*  05/16/05  Madhu Hegde     CQ 9620. Added interop bit for ADI_UPSTREAM_RATES_FIX.
+*                            When this bit is enabled, the quantization noise added to
+*                            R-MEDLEY is reduced to get higher US data rates.
+*  07/13/05  C. Urrutia      Added interop bit for ENABLE_OHIO_HYBRID4_REWIRE.
+*                            When this bit is enabled hybrid 4 becomes part of the tx path
+*  07/12/05  Shanti K        CQ9528 : Modified data structure DEV_HOST_modemEnvPublic_t
+*  07/18/05  C. Urrutia      CQ9787 : Added interop bit for WESTELL_RFI_OPTION
+*  08/31/05  Peter Hou       CQ9613 : Remove/recycle bit12, ENABLE_OHIO_HYBRID4_REWIRE,
+*                            changed to ENABLE_NOKIA_D50_GDMT_RETRAIN_FIX
+*  10/31/05  Ram             CQ10012: Added interop bit for REPORT_AVG_MARGIN; reused Bit14
+*                                     Deleted unused bit for Belgacom Fast AnnexB training.
+*  11/03/05  Manjula K       CQ10037:Added Inventory command support for ADSL2/2+
+*  10/25/05  Ragu Pappu      CQ10004.  Added API control bit to disable extended*
+*                            framing support.
+*  1/4/06    Peter Hou       CQ5885, fixed ADSL2\2+ clearEoc CNXT IoP, added DISABLE_CNXT_CLREOC_PATCH.
+*  01/18/06  Hanyu Liu       CQ10173: Added API bit17, ENABLE_TELEFONICA_FIXED_MARGIN
+*  11/08/05  Peter Hou       Add DEV_HOST_BIS_MGMTCount_t in DEV_HOST_dspOamSharedInterface_t
+*  01/27/06  Raghu M         CQ10045 Added API bit support for INP maximization
+*  01/25/06  Madhu H         CQ10198: Added API bit to extend Annex B US to bin 28
+*                            and delay minimization.
+*  01/18/06  E Yin           CQ10222: Add API control bit to disable extended INP paramter in Ghs.
+*  02/08/06  Wal/Ley/Peter   CQ10242: Added Cli2Linux buffer interface for CLI
+*                                     redirection to Linux
+*  02/09/06  Kapil Gulati    CQ10222: The API control bits for extended framing and INP>2 were
+*                            not compliant with our traditional way of defining these bits.
+*                            Hence fixed that issue.
+*  02/14/06  Kapil Gulati    CQ10222: During SQI testing it was found that LS FS+ DSLAM does not
+*                            handle INP>2 G.hs message correctly. Hence it was decided to disable
+*                            this feature by default.
+*  03/28/06  Tim Bornemisza  CQ10351: Add a bit to enable SRA and a message enum for the DHAL
+*  UR8_MERGE_START CQ10415_10385 HL
+*  03/27/06  Hanyu Liu       CQ10415: Changed infineon_CO_cabinet... to CO_cabinet...
+*  03/30/06  Hanyu Liu       CQ10385: Added IOP API bit to enable C-COMB1 detector for 8 Comb tones.
+*  UR8_MERGE_END CQ10415_10385
+// UR8_MERGE_START API-Bits PeterHou
+*  04/03/06  PeterHou/KapilG CQ10375: Added ENABLE_PHY_INP_DSCRC_IMPROVEMENT API bit
+*            PeterHou/HanyuL CQ10385: Added ENABLE_DETECT_MORE_COMB1TONES API bit
+*            PeterHou/TimB   CQ10351: Added ENABLE_PHY_SRA_SUPPORT API bit
+// UR8_MERGE_END API-Bits PeterHou
+// UR8_MERGE_START CQ10448 Ram
+*  04/04/06  Ram             CQ10448: Combined two reserved byte fields into one SINT16 in atur_msg
+*                            structure as attNdrBits field to compute DS Max Attainable NDR
+*                            Removed trailing comma from IOP and PHY Feature Bit Structures
+// UR8_MERGE_END CQ10448 Ram
+// UR8_MERGE_START CQ10471 PeterHou
+*  04/06/2006 PeterHou/TimB  CQ10471: Added ENABLE_CNXT_US_FLAVOR_B API Bit
+// UR8_MERGE_END CQ10471
+// UR8_MERGE_START API-Bit ManjulaK
+*  05/24/06  ManjulaK/Nima   CQ10202: Added ENABLE_PHY_TI_INTERNAL1 API bit.
+// UR8_MERGE_END API-Bit
+// UR8_MERGE_START CQ10600 ManjulaK
+// UR8_MERGE_START CQ10600 ManjulaK
+*  05/26/2006 ManjulaK/HT  CQ10600: Added ENABLE_ETISALAT_US_CRC_N_LINEDROP_FIX API Bit
+// UR8_MERGE_END CQ10600
+// UR8_MERGE_END CQ10600
+// UR8_MERGE_START_END CQ10617 AdeelJ
+// 06/05/2006 AdeelJ       CQ10617: Added ENABLE_INFN_MINMAR_PARSE_N_CHK API Feature Bit
+// UR8_MERGE_START_END API-Bit ManjulaK
+*  06/07/06  ManjulaK      CQ10202: Changed ENABLE_PHY_TI_INTERNAL1 API bit assignment to 30 from 31.
+*    UR8_MERGE_START CQ10654 Ram
+*    06/06/06   Ram          CQ10654:  Added PHY Feature API bit 11 to activate in T1.413 mode.
+*    UR8_MERGE_END   CQ10654 Ram
+//UR8_MERGE_START_END CQ10516 MH
+*  06/12/06  Madhu Hegde   CQ10516: Added ENABLE_PHY_COOK_INP_TRAINING API bit to bit 13
+//UR8_MERGE_START_END CQ10665 NF
+*  06/15/06  Nima Ferdosi  CQ10665: Added OAMFEATURE_PHY_EXTENDED_PILOT_SEARCH API bit to bit 14
+// UR8_MERGE_START APIBits ManjulaK
+*  07/26/06  ManjulaK/HT  CQ10781: Added ENABLE_LOWER_GHS_TONE_POWER API bit
+*                         CQ10784: Added ENABLE_REDUCE_GHS_FALL_BACK_TIME API bit
+// UR8_MERGE_END APIBits
+//UR8_MERGE_START_END CQ10665 NF
+*  06/29/06  Nima Ferdosi  CQ10665: fixed a naming mistake in API bit 14
+//UR8_MERGE_START_END CQ10773 Ram
+*  07/18/06  Ram           CQ10773: Added a #define for Loop Adaptive Timing Threshold to oamFeature
+//UR8_MERGE_START_END CQ10758 Tim
+*  07/11/06  Tim Bornemisza CQ10758: Updated DEV_HOST_olrDspRxDef_t structure for US SRA 
+// UR8_MERGE_START_END CQ10774 Ram
+*  07/19/2006 Ram          CQ10774: Added bit definition for oamFeature to disable Mailbox interrupt
+*                          upon SRA event.
+// UR8_MERGE_START CQ10774,784 Ram
+*   08/08/06  Ram          CQ10774,84: Removed ENABLE_REDUCE_GHS_FALL_BACK_TIME & oamFeature definition
+*                          for loop adaptive timing threshold and consolidated them into a new IOP bit
+*                          ENABLE_TELIA_SONERA_FIX for all fixes applied to Telia.
+// UR8_MERGE_START_END CQ10774,784 Ram
+// UR8_MERGE_START_END     CQ10566 MB
+// 08/11/2006 Mark Bryan   CQ10566 Added API_BIT ENABLE_PHY_GHSCABMODE
+// UR8_MERGE_START_END CQ10899
+*  08/30/2006 Madhu Hegde  CQ10899 Added API bits for ECHO_BAND_DS_SNR_CUTBACK
+*  UR8_MERGE_START     CQ10927 HZ
+*  09/11/06   Hao Zhou     CQ10927: Changed enumeration from ENABLE_RANDOM_TONE_ORDER to DISABLE_RANDOM_TONE_ORDER and removed CONTROL enum.
+*  API bit affected:
+*  ENABLE_RANDOM_TONE_ORDER; CONTROL_RANDOM_TONE_ORDER;
+*  UR8_MERGE_END           CQ10927
+*  UR8_MERGE_START CQ10880   Jack Zhang
+*  8/30/06  JZ   CQ10880: Add DSL HAL API for sending mailbox message for L3
+*  UR8_MERGE_END   CQ10880*
+*  UR8_MERGE_START CQ11023 Hao-Ting Lin
+*  Add API bit: ENABLE_PCCW_CNXT_FIX
+*  Fix 2 issues: 1. unable to link up against CNXT DSLAM (U24,o6981,e38,e67)
+*                2. margin drop to negative against to CNXT E38 G.DMT mode
+*  UR8_MERGE_END CQ11023
+*  UR8_MERGE_START CQ11031 Hao-Ting Lin
+*  Add API bit: ENABLE_VERSION_NO_16BYTES
+*  control EOC 16bytes for vendor version number at G.DMT mode.
+*  UR8_MERGE_END
+// UR8_MERGE_START CQ10913_AC7V30 YW
+// 09/12/06   Yan Wang     CQ10913: AR7 fails to train against AC7 with version 3.0. This is because
+//                         the old GHS in AC7 does not recognize new features. We should disable the 
+//                         support of Annex M, extended frame parameters and large INP if AC7 with 
+//                         firmware version older than 3.40 is encountered, and force the CPE to 
+//                         retrain.
+//                         We also create a new API bit to disable Annex M from the host.
+// UR8_MERGE_END CQ10913_AC7V30 YW
+*
+// UR8_MERGE_START CQ11007  KCCHEN
+// 09/26/06 KCCHEN       CQ11007 : US SNR margin update
+// UR8_MERGE_END CQ11007 KCCHEN
+* UR8_MERGE_START CQ11021 CQ11022 Hao-Ting Lin
+*                                 Add COMLAB fix API bit
+* UR8_MERGE_END CQ11021 CQ11022 Hao-Ting Lin
+* UR8_MERGE_START_END CQ11007 Ram
+// 10/04/06 Ram          CQ11007 : Added reserved bytes for 32-bit alignment in EocVar
+// UR8_MERGE_START CQ10989 ManjulaK
+* 10/20/06  Manjulak       CQ10989: Made changes for reporting selftestresults in ADSL2/2+ mode.
+// UR8_MERGE_END CQ10989
+* UR8_MERGE_START_END CQ10819 Ram
+*  10/23/06 Ram          CQ10819 : Added API bit for OPTUS BT loop fix
+* UR8_MERGE_START CQ10960 HZ
+// 10/24/06 HZ        CQ10960: [7.0 SQI] Shorter reach vs LU FS+.  
+//                    Add a PHY API bit (ENABLE_TIME_ERROR_SCALE_CNXT) for the PHY_TIME_ERROR_SCALE selection.
+* UR8_MERGE_END   CQ10960 HZ
+// UR8_MERGE_START CQ11075_API25 YW
+// 10/23/06 Yan Wang      CQ11075: During live line tests at TDC and B2, DS CRC's and line drops were 
+//                        observed with Ericsson/BRCM and Siemens/IFX DSLAM's. We need to reduce the 
+//                        DS coding gain assumption by 2dB to leave enough noise margin, i.e. add 2-dB 
+//                        pad for DS margin.
+//                        A FEATURE API bit25 was defined  to provide an option for customers to control 
+//                        when they need it.
+// UR8_MERGE_END CQ11075_API25 YW
+// UR8_MERGE_START_END CQ11080 Manjula/KC
+*  10/25/06 Manjula       CQ11080 : Added ENABLE_CTLM_LOW_USRATE_FIX API bit                        
+*  UR8_MERGE_START CQ10978   Jack Zhang
+*  10/4/06  JZ     CQ10978: Request for the DSL Power Management Status Report
+*  UR8_MERGE_END   CQ10978*
+*  UR8_MERGE_START CQ10979   Jack Zhang
+*  10/4/06  JZ     CQ10979: Request for TR-069 Support for RP7.1
+*  UR8_MERGE_END   CQ10979*
+*  UR8_MERGE_START_END CQ11004 Nima Ferdosi
+*  10/27/06  Nima   CQ11004: Added ENABLE_PHY_TI_INTERNAL2 API bit.
+*  UR8_MERGE_START_END CQ11004 Nima Ferdosi
+*  11/02/06  Nima   CQ11004: Renamed ENABLE_PHY_TI_INTERNAL2 API bit to DISABLE_PHY_TI_INTERNAL2
+* (C) Copyright Texas Instruments Inc. 2002.  All rights reserved.
 *******************************************************************************/
 
 #include "dev_host_verdef.h"
+
+// DW 12/28/04 Bit mask definitions, intended for general use
+#define BIT0                 0x00000001
+#define BIT1                 0x00000002
+#define BIT2                 0x00000004
+#define BIT3                 0x00000008
+#define BIT4                 0x00000010
+#define BIT5                 0x00000020
+#define BIT6                 0x00000040
+#define BIT7                 0x00000080
+#define BIT8                 0x00000100
+#define BIT9                 0x00000200
+#define BIT10                0x00000400
+#define BIT11                0x00000800
+#define BIT12                0x00001000
+#define BIT13                0x00002000
+#define BIT14                0x00004000
+#define BIT15                0x00008000
+#define BIT16                0x00010000
+#define BIT17                0x00020000
+#define BIT18                0x00040000
+#define BIT19                0x00080000
+#define BIT20                0x00100000
+#define BIT21                0x00200000
+#define BIT22                0x00400000
+#define BIT23                0x00800000
+#define BIT24                0x01000000
+#define BIT25                0x02000000
+#define BIT26                0x04000000
+#define BIT27                0x08000000
+#define BIT28                0x10000000
+#define BIT29                0x20000000
+#define BIT30                0x40000000
+#define BIT31                0x80000000
 
 // ---------------------------------------------------------------------------------
 // Address of the pointer to the DEV_HOST_dspOamSharedInterface_s struct of pointers
@@ -234,7 +467,10 @@ enum
   HOST_DSLSS_SHUTDOWN, // Host initiated DSLSS shutdown message
   HOST_SET_GENERIC,    // Set generic CO profile
   HOST_UNDO_GENERIC,   // Set profile previous to Generic
-  HOST_GHS_CLEARDOWN   // G.hs - FOR INTERNAL USE ONLY to start cleardown
+  HOST_GHS_CLEARDOWN,  // G.hs - FOR INTERNAL USE ONLY to start cleardown
+// * UR8_MERGE_START CQ10880   Jack Zhang
+  HOST_L3_MSG          // Send a message to DSP for L3
+// * UR8_MERGE_END   CQ10880*  
 };
 
 // These DSP-to-Host responses are organized into two groups:
@@ -276,25 +512,118 @@ enum
   DSP_QUIT_ADIAG,         // Manufacturing AFE diags: Response to HOST_QUIT_ADIAG
   DSP_DGASP,              // DSP Message to indicate dying gasp
   DSP_EOC,                // DSP Message to indicate that DSP sent an EOC message to CO
-  DSP_TRAINING_MSGS       // DSP Message to indicate that host has to copy the training message specified in the tag field.
+  DSP_TRAINING_MSGS,      // DSP Message to indicate that host has to copy the training message specified in the tag field.
+  DSP_CLEAR_EOC,          // DSP Message to indicate that the Rx buffer is full and ready for host to reead
+  // UR8_MERGE_START SRA Tim Bornemisza
+  DSP_LOF,                // DSP Message to indicate an LOF alarm is being set or cleared
+  DSP_SRA                 // Downstream SRA complete - FOR INTERNAL USE ONLY
+  // UR8_MERGE_END SRA Tim Bornemisza
 };
 
-// Define different ADSL training modes.
-//Defintions as per new host interface.
-#define NO_MODE             0
-#define GDMT_MODE           2
-#define GLITE_MODE          4
-#define ADSL2_MODE          8
-#define ADSL2_DELT          (ADSL2_MODE+1)
-#define ADSL2PLUS_MODE      16
-#define ADSL2PLUS_DELT      (ADSL2PLUS_MODE+1)
-#define READSL2_MODE        32
-#define READSL2_DELT        (READSL2_MODE+1)
-#define T1413_MODE          128
-#define MULTI_MODE          255 // all possible bits are set in the bit field
+// Definitions used to indicate which modes are allowed by HAL. The datapump looks at
+// these to determine the contents of transmitted handshake messages and to figure out
+// what are the allowed modes in which the modem can potentially train up.
+// Note that at this time ANNEX I and J are not supported and these bits are
+// effectively ignored.
+#define NO_MODE                       0x0000
+#define DELT_ENABLE                   0x0001
+#define GDMT_ANNEX_A_OR_B             0x0002
+#define GLITE_ANNEX_A_AND_B           0x0004
+#define ADSL2_ANNEX_A_OR_B            0x0008
+#define ADSL2PLUS_ANNEX_A_OR_B        0x0010
+#define ADSL2_ANNEX_L                 0x0020
+#define T1413_ANSI                    0x0080
+#define ADSL2_ANNEX_I                 0x0100
+#define ADSL2_ANNEX_J                 0x0200
+#define ADSL2_ANNEX_M                 0x0400
+#define ADSL2PLUS_ANNEX_I             0x0800
+#define ADSL2PLUS_ANNEX_J             0x1000
+#define ADSL2PLUS_ANNEX_M             0x2000
+#define ADSL2_ANNEX_A_OR_B_DELT       (ADSL2_ANNEX_A_OR_B     + DELT_ENABLE)
+#define ADSL2PLUS_ANNEX_A_OR_B_DELT   (ADSL2PLUS_ANNEX_A_OR_B + DELT_ENABLE)
+#define ADSL2_ANNEX_L_DELT            (ADSL2_ANNEX_L          + DELT_ENABLE)
+#define MULTI_MODE                    0xffff
+#define MULTI_MODE8                   0xff        // 8 bit Multi_Mode for backward compatibility
+
+#define ADSL2_MASKS  (ADSL2_ANNEX_A_OR_B | ADSL2_ANNEX_I | ADSL2_ANNEX_J | ADSL2_ANNEX_L | ADSL2_ANNEX_M)
+#define ADSL2PLUS_MASKS (ADSL2PLUS_ANNEX_A_OR_B | ADSL2PLUS_ANNEX_I | ADSL2PLUS_ANNEX_J | ADSL2PLUS_ANNEX_M)
+
+// Defintions used to indicate the standard in which the modem trained up.
+// Values for trainMode field of DEV_HOST_dspWrNegoParaDef_t - please note this refers to standard
+// used. Please be careful while changing this. Changing the bit definitions of this byte can
+// BREAK backward compatibility with HAL and ATM drivers versions earlier than D4.1
+// Typically the bit field definitions for this field should be the same as Least Significant Byte of
+// DEV_HOST_oamWrNegoParaDef_t.stdMode
+// Please note that MULTI_MODE as defined in stdMode field of DEV_HOST_oamWrNegoParaDef_t is not
+// required as this field refers to any one selected mode
+
+#define GDMT_MODE                     0x02
+#define GLITE_MODE                    0x04
+#define ADSL2_MODE                    0x08
+#define ADSL2PLUS_MODE                0x10
+#define T1413_MODE                    0x80
+#define ADSL2_DELT                    (ADSL2_MODE     + DELT_ENABLE)
+#define ADSL2PLUS_DELT                (ADSL2PLUS_MODE + DELT_ENABLE)
+
+#define BIS_STDS_MASK                 (ADSL2_MODE | ADSL2PLUS_MODE | DELT_ENABLE)
+
+// Definitions used to indicate the Annex in which the modem trained up.
+// Values for annex_selected field of DEV_HOST_dspWrNegoParaDef_t
+enum
+{
+  ANNEXA                  = 0x1,
+  ANNEXB                  = 0x2,
+  ANNEXC                  = 0x4,
+  ANNEXI                  = 0x8,
+  ANNEXJ                  = 0x10,
+  ANNEXL                  = 0x20,
+  ANNEXM                  = 0x40
+};
+
+// Definitions for psd_mask_qualifier field of DEV_HOST_dspWrNegoParaDef_t
+
+// Bit positions of the fields in DEV_HOST_dspWrNegoParaDef_t.psd_mask_qualifier
+#define OVERLAPPED_SPEC_TYPE_BITPOS          0
+#define ANNEXL_TYPE_BITPOS                   1 // Also called READSL
+#define ANNEXMJ_SUBMODE_MASK_BITPOS          2
+#define ANNEXMJ_US_INBAND_PSD_SHAPE_BITPOS   6
+// Bit position 7 reserved for Annex J or M related use
+#define ANNEXB_TONES1TO32_SUPP_BITPOS        8
+
+
+// Overlapped/Non-overlapped Spectrum
+// 1 - DS/US Overlapped spectrum, 0 - Non overlapped spectrum
+#define OVERLAPPED_SPECTRUM_USED             (0x0001<<OVERLAPPED_SPEC_TYPE_BITPOS)
+
+// READSL_TYPE Bit Field Definitions DEV_HOST_dspWrNegoParaDef_t.psd_qualifier
+// 1-narrowband READSL / 0-wideband READSL
+#define NB_ANNEXL                            (0x0001<<ANNEXL_TYPE_BITPOS)
+#define WB_ANNEXL                            (0x0000<<ANNEXL_TYPE_BITPOS)
+
+// Bit Masks to select the Sub Mode Mask Value of DEV_HOST_dspWrNegoParaDef_t.psd_qualifier
+// and extract it
+#define ANNEXM_US_SUBMODE_BITMASK            0x003c  // 4 bit field used for Qualifying the Annex J/M Upstream Mask
+
+// values of the US_INBAND_PSD_SHAPE bits of the psd_qualifier field
+#define ANNEXMJ_SUBMODE_MASK_32               0x00
+#define ANNEXMJ_SUBMODE_MASK_36               0x01
+#define ANNEXMJ_SUBMODE_MASK_40               0x02
+#define ANNEXMJ_SUBMODE_MASK_44               0x03
+#define ANNEXMJ_SUBMODE_MASK_48               0x04
+#define ANNEXMJ_SUBMODE_MASK_52               0x05
+#define ANNEXMJ_SUBMODE_MASK_56               0x06
+#define ANNEXMJ_SUBMODE_MASK_60               0x07
+#define ANNEXMJ_SUBMODE_MASK_64               0x08  // 0x9 to 0xA are reserved
+
+// Inband Spectral Shaping Support
+// PSD Shaping Suported -1, Not Supported = 0
+#define ANNEXMJ_US_INBAND_SPECSHAPING_USED   (0x0001<<ANNEXMJ_US_INBAND_PSD_SHAPE_BITPOS)
+
+// Annex B US Tones 1 to 32 Support
+// US Tones 1 to 32 used -1, Not used = 0
+#define ANNEXB_US_TONES_1TO32_USED           (0x0001<<ANNEXB_TONES1TO32_SUPP_BITPOS)
 
 // Define the reason for dropping the connection
-
 enum
 {
   REASON_LOS         = 0x01,
@@ -303,6 +632,157 @@ enum
   REASON_MARGIN_DROP = 0x08
 };
 
+// Define bit fields for PMD layer feature enable/disable
+enum
+{
+  ENABLE_ONE_BIT_SUPPORT       =  BIT0,
+  ENABLE_S_ONE_BY_FOUR         =  BIT1,
+  ENABLE_TONE_BLACKOUT         =  BIT2,
+  //UR8_MERGE_START_END CQ10927 HZ
+  DISABLE_RANDOM_TONE_ORDER     =  BIT3,
+  ENABLE_2TONE_GHS_DETECTION   =  BIT4,
+  ENABLE_CAPPED_RATE_SUPPORT   =  BIT5,
+  DISABLE_EXTENDED_FRAMING_SUPPORT = BIT7,    // CQ10004
+  ENABLE_EXTENDED_INP_SUPPORT      = BIT8,    // CQ10222
+// UR8_MERGE_START API-Bits PeterHou
+  ENABLE_PHY_SRA_SUPPORT           = BIT9,    // CQ10351
+  ENABLE_PHY_INP_DSCRC_IMPROVEMENT = BIT10,   // CQ10375
+  ENABLE_T1413_ACTIVATION_FIRST    = BIT11,    // CQ10495
+// UR8_MERGE_END API-Bits
+// UR8_MERGE_START_END CQ10617 AdeelJ
+  ENABLE_INFN_MINMAR_PARSE_N_CHK   = BIT12,    // CQ10617
+
+// UR8_MERGE_START_END CQ10516 MH
+  ENABLE_PHY_COOK_INP_TRAINING     = BIT13,    // CQ10516 MH
+
+// UR8_MERGE_START_END CQ10665 NF
+  ENABLE_PHY_EXTENDED_PILOT_SEARCH  = BIT14,   //CQ10665 NF
+
+// UR8_MERGE_START APIBits ManjulaK
+  ENABLE_LOWER_GHS_TONE_POWER       = BIT15,    //CQ10781
+// UR8_MERGE_END APIBits
+// UR8_MERGE_START_END CQ10566 MB
+  ENABLE_PHY_GHSCABMODE    =  BIT16,   //CQ10566
+// UR8_MERGE_START_END CQ10913_AC7V30 YW  
+  DISABLE_ANNEXM_SUPPORT       =  BIT17,       // CQ10913
+// UR8_MERGE_START_END CQ10960 HZ  
+  ENABLE_TIME_ERROR_SCALE_CNXT = BIT18,         //CQ10960 HZ
+  // UR8_MERGE_START CQ11004 Nima
+  // UR8_MERGE_START_END Renamed ENABLE_PHY_TI_INTERNAL2 to DISABLE_PHY_TI_INTERNAL2
+  DISABLE_PHY_TI_INTERNAL2    = BIT29,    //CQ11004
+// UR8_MERGE_END CQ11004
+// UR8_MERGE_START API-Bit ManjulaK
+  ENABLE_PHY_TI_INTERNAL1    = BIT30    //CQ10202
+// UR8_MERGE_END API-Bit
+
+};
+
+// UR8_MERGE_START_END     CQ10927 HZ : Removed CONTROL enum here.
+
+// Define bit fields for interop feature enable/disable
+enum
+{
+  DISABLE_FORCED_T1413_GSPV_REV2           =  BIT0,
+  ENABLE_SHORT_LOOP_US_ERR_REDUCTION       =  BIT1,  //CQ9459
+  ENABLE_T1413_LONG_LOOP_ACTIVATION        =  BIT2,
+  ENABLE_QWEST_ALCATEL_US_LOW_RATE_FIX     =  BIT3,
+  ENABLE_ASB_ETSIB_HIGH_BER_FIX            =  BIT4,
+  ENABLE_BELL_CANADA_DOUBLE_BRIDGE_TAP_FIX =  BIT5,
+  ENABLE_BELGACOM_DS_FIX                   =  BIT6,
+  ENABLE_CINCINNATI_BELL_FIX               =  BIT7,
+  ENABLE_FRANCE_TELECOM_FIX                =  BIT8,
+  ENABLE_QWEST_US_1M_RATE_FIX              =  BIT9,
+  DISABLE_SAFEMODE_FOR_G992_3_5            =  BIT10,  // CQ9500
+  ENABLE_ADI_UPSTREAM_RATES_FIX            =  BIT11,  // CQ9620 MH 05/16/
+  ENABLE_NOKIA_D50_GDMT_RETRAIN_FIX        =  BIT12,  // CQ9613
+  ENABLE_WESTELL_RFI_OPTION                =  BIT13,  // CQ9787 - Westell RFI option
+  ENABLE_REPORT_AVG_MARGIN                 =  BIT14,  // CQ10012 Ram Avg Margin Reporting; recycled unused bit14
+  DISABLE_CNXT_CLREOC_PATCH                =  BIT15,  // CQ9885 - clearEoc Fix
+  ENABLE_MAXIMIZE_INP_SUPPORT              =  BIT16,  // CQ10045 - Maximize the INP support in fixed and capped rates
+  ENABLE_TELEFONICA_FIXED_MARGIN           =  BIT17,  // CQ10173 - Force to drop line if  margin < targetmargin
+  ENABLE_MINIMIZE_INTERLEAVER_DELAY        =  BIT18,  // CQ10045 - Minimize the interleaver dely in fixed and capped rates
+  ENABLE_ANNEXB_US_STARTBIN                =  BIT19,  //CQ10198 Extend Annex B US to bin 28
+// UR8_MERGE_START API-Bits PeterHou
+  ENABLE_DETECT_MORE_COMB1TONES            =  BIT20,  // CQ10385 - Detect more Comb1 tones to combat Comb1-like crosstalk noise in ADSL2/2+ mode
+  ENABLE_CNXT_US_FLAVOR_B                  =  BIT21,   // CQ10471 - Use CNXT Upstream flavor B in G.DMT & T1.413 mode
+// UR8_MERGE_END API-Bits
+// UR8_MERGE_START CQ10600 ManjulaK
+  ENABLE_ETISALAT_US_CRC_N_LINEDROP_FIX    = BIT22,    //CQ10600- add quantization noise to upstream signal from G2_MedleyA to G2_MedleyH state
+// UR8_MERGE_END CQ10600
+  ENABLE_TELIA_SONERA_FIX                  = BIT23,    //UR8_MERGE_START_END CQ10773, CQ10784 Ram
+// UR8_MERGE_START_END CQ10899 
+  ENABLE_ECHO_BAND_DS_SNR_CUTBACK          = BIT24,     //SNR cutback for Showtime stability
+// UR8_MERGE_START_END CQ11075_API25 YW
+  ENABLE_LINE_STABILITY_2DBPAD_MARGIN      = BIT25,  
+//UR8_MERGE_START CQ11023 Hao-Ting Lin
+  ENABLE_PCCW_CNXT_FIX                     = BIT26,
+  //UR8_MERGE_END CQ11023
+  //UR8_MERGE_START CQ11031 Hao-Ting Lin
+  ENABLE_VERSION_NO_16BYTES                = BIT27,
+  //UR8_MERGE_END CQ11031
+//UR8_MERGE_START CQ11021 CQ11022 Hao-Ting Lin
+  ENABLE_NORWAY_COMLAB_FIX                 = BIT28,
+//UR8_MERGE_END CQ11021 CQ11022 Hao-Ting Lin
+  ENABLE_OPTUS_BTLOOP_FIX                  = BIT29,   // UR8_MERGE_START_END CQ10819 Ram
+// UR8_MERGE_START_END CQ11080 Manjula/KC
+  ENABLE_CTLM_LOW_USRATE_FIX               = BIT30
+};
+
+enum
+{
+  CONTROL_FORCED_T1413_GSPV_REV2             =  DISABLE_FORCED_T1413_GSPV_REV2,
+  CONTROL_SHORT_LOOP_US_ERR_REDUCTION        =  ENABLE_SHORT_LOOP_US_ERR_REDUCTION,    //CQ9459
+  CONTROL_T1413_LONG_LOOP_ACTIVATION         =  ENABLE_T1413_LONG_LOOP_ACTIVATION,
+  CONTROL_QWEST_ALCATEL_US_LOW_RATE_FIX      =  ENABLE_QWEST_ALCATEL_US_LOW_RATE_FIX,
+  CONTROL_ASB_ETSIB_HIGH_BER_FIX             =  ENABLE_ASB_ETSIB_HIGH_BER_FIX,
+  CONTROL_BELL_CANADA_DOUBLE_BRIDGE_TAP_FIX  =  ENABLE_BELL_CANADA_DOUBLE_BRIDGE_TAP_FIX,
+  CONTROL_BELGACOM_DS_FIX                    =  ENABLE_BELGACOM_DS_FIX,
+  CONTROL_CINCINNATI_BELL_FIX                =  ENABLE_CINCINNATI_BELL_FIX,
+  CONTROL_FRANCE_TELECOM_FIX                 =  ENABLE_FRANCE_TELECOM_FIX,
+  CONTROL_QWEST_US_1M_RATE_FIX               =  ENABLE_QWEST_US_1M_RATE_FIX,
+  CONTROL_SAFEMODE_FOR_G992_3_5              =  DISABLE_SAFEMODE_FOR_G992_3_5,         // CQ9500
+  CONTROL_ADI_UPSTREAM_RATES_FIX             =  ENABLE_ADI_UPSTREAM_RATES_FIX,         // CQ 9620 MH 05/16/05
+  CONTROL_NOKIA_D50_GDMT_RETRAIN_FIX         =  ENABLE_NOKIA_D50_GDMT_RETRAIN_FIX,     // CQ9613
+  CONTROL_WESTELL_RFI_OPTION                 =  ENABLE_WESTELL_RFI_OPTION,             // CQ9787 - Westell RFI option
+  CONTROL_REPORT_AVG_MARGIN                  =  ENABLE_REPORT_AVG_MARGIN,              // CQ10012 Ram Avg Margin Reporting; recycled unused bit14
+  CONTROL_CNXT_CLREOC_PATCH                  =  DISABLE_CNXT_CLREOC_PATCH,             // CQ9885 clearEoc fix
+  CONTROL_MAXIMIZE_INP_SUPPORT               =  ENABLE_MAXIMIZE_INP_SUPPORT,           // CQ10045 - Maximize the INP support in fixed and capped rates
+  CONTROL_TELEFONICA_FIXED_MARGIN            =  ENABLE_TELEFONICA_FIXED_MARGIN,        // CQ10173
+  CONTROL_MINIMIZE_INTERLEAVER_DELAY         =  ENABLE_MINIMIZE_INTERLEAVER_DELAY,     // CQ10045 - Minimize the interleaver delay in fixed and capped rates
+  CONTROL_ANNEXB_US_STARTBIN                 =  ENABLE_ANNEXB_US_STARTBIN,             // CQ10198 Extend Annex B US to bin 28
+// UR8_MERGE_START API-Bits PeterHou
+  CONTROL_DETECT_MORE_COMB1TONES             =  ENABLE_DETECT_MORE_COMB1TONES,         // CQ10385 - Detect more Comb1 tones to combat Comb1-like crosstalk noise in ADSL2/2+ mode.
+  CONTROL_CNXT_US_FLAVOR_B                   =  ENABLE_CNXT_US_FLAVOR_B,               // CQ10471 - Use CNXT Upstream flavor B in G.DMT & T1.413 mode
+// UR8_MERGE_END API-Bits
+  // UR8_MERGE_START CQ10600 ManjulaK
+  CONTROL_ETISALAT_US_CRC_N_LINEDROP_FIX     =  ENABLE_ETISALAT_US_CRC_N_LINEDROP_FIX,  //CQ10600- add quantization noise to upstream signal from G2_MedleyA to G2_MedleyH state
+  // UR8_MERGE_END CQ10600
+  CONTROL_TELIA_SONERA_FIX                   =  ENABLE_TELIA_SONERA_FIX,
+  // UR8_MERGE_START_END_CQ10899 MH
+  CONTROL_ECHO_BAND_DS_SNR_CUTBACK           =  ENABLE_ECHO_BAND_DS_SNR_CUTBACK,
+  // UR8_MERGE_START_END CQ11075_API25 YW
+  CONTROL_LINE_STABILITY_2DBPAD_MARGIN       =  ENABLE_LINE_STABILITY_2DBPAD_MARGIN,
+  //UR8_MERGE_START CQ11023 Hao-Ting Lin
+  CONTROL_PCCW_CNXT_FIX                      =  ENABLE_PCCW_CNXT_FIX,
+  //UR8_MERGE_END CQ11023
+  //UR8_MERGE_START CQ11031 Hao-Ting Lin
+  CONTROL_VERSION_NO_16BYTES                 =  ENABLE_VERSION_NO_16BYTES,
+  //UR8_MERGE_END CQ11031
+  //UR8_MERGE_START CQ11021 CQ11022 Hao-Ting Lin
+  CONTROL_NORWAY_COMLAB_FIX                  =  ENABLE_NORWAY_COMLAB_FIX,
+  //UR8_MERGE_END CQ11021 CQ11022 Hao-Ting Lin
+  // UR8_MERGE_START_END CQ10819 Ram
+  CONTROL_OPTUS_BTLOOP_FIX                   =  ENABLE_OPTUS_BTLOOP_FIX,
+  // UR8_MERGE_START_END CQ11080 Manjula/KC
+  CONTROL_CTLM_LOW_USRATE_FIX                =  ENABLE_CTLM_LOW_USRATE_FIX
+};
+
+enum  //(CQ10242)
+{
+    CLI2MCBSP,       // send CLI buffer to McBSP only
+    CLI2HOST,        // send CLI buffer to host
+    CLI2BOTH         // send CLI biffer to McBSP AND Host
+};
 
 // ----------------------------------------------------
 // Begin modem state bit field definitions - DSP write.
@@ -439,6 +919,15 @@ typedef struct
 // -----------------------------------------------
 // Begin NegoPara message definitions - DSP write.
 // -----------------------------------------------
+// CQ9600: Maximym CMSGPCB2_length is Fixed CMSG_PCB length (4) +
+//         MAX_NSCus (64)/8 = 2 + 8 =12
+//         Note that in DELT mode the length is 2 bytes more than in non DELT mode.
+//         The constant below takes DELT into account.
+#define MAX_CMSGPCB2_LENGTH              12
+
+// CQ9600: Definition of CMSGPCB2 Length with Blackouts. The cMsgs1 field
+//         DEV_HOST_dspWrNegoParaDef_t structure below has to have the maximum
+//         of CMSGPCB length in ADSl2/2+ and CMSGS1 in ADSL1/T1.413
 
 typedef struct
 {
@@ -446,22 +935,26 @@ typedef struct
   UINT8  bDummy1;            // dummy byte for explicit 32-bit alignment
   UINT16 lineLength;         // Contains loop length estimate.  Accuracy w/i 500 ft.  LSbit = 1 for straight loop, = 0 for bridge tap
   UINT32 atucVendorId;       // Pass the vendor id of the CO to the host
-  UINT8  cMsgs1[8];          // CMsgs1 and CMSGPCB
+  UINT8  cMsgs1[MAX_CMSGPCB2_LENGTH];    // Array is used for both cMsgs1 & cMsg-PCB
   UINT16 adsl2DSRate;        //
   UINT8  cRates2;            //
   UINT8  rRates2;            //
   UINT8  rRates1[4][11];     //
   UINT8  cMsgs2[4];          //
   UINT8  cRates1[4][30];     //
-  UINT8  rMsgs2[4];          //
+  UINT8  rMsgs2[4];          // This always needs to be aligned on 4 byte boundary.
   UINT16 adsl2USRate;        //
   UINT8  atucGhsRevisionNum; // Pass the G.hs Revision number of the CO to the host
   UINT8  reserved1;          //
   PUINT8 *adsl2DeltMsgs_p;   // This pointer to a pointer passes the address of the globalvar.pString, which is also
                              // a pointer list of pointers. It will be used to pass all the new ADSL2 DELT messages to
                              // host side. This is for ACT.
+  UINT8  rcvMode;            // rcvMode for physical layer transactions. Trainmode will be used for all messaging
+  UINT8  bDummy2[3];         // for integer alignment
+  UINT16 annex_selected;     // Annex that the modem trained up with.
+  UINT16 psd_mask_qualifier; // Bit definitions given above in the files.
 } DEV_HOST_dspWrNegoParaDef_t;
-
+ 
 
 // ----------------------------------------------------
 // Begin OAM NegoPara message definitions - Host write.
@@ -481,15 +974,16 @@ typedef struct
 #define DEV_HOST_EOCAOC_INTERRUPT_MASK  0x00000004
 #define DEV_HOST_CONS_DISP_DISABLE_MASK 0x00000008
 #define DEV_HOST_GHSMSG_INTERRUPT_MASK  0x00000010
+#define DEV_HOST_SRA_INTERRUPT_MASK     0x00000020 //UR8_MERGE_START_END CQ10774 Ram
 
 typedef struct
 {
   UINT8   stdMode;              // Desired train mode.  See training modes defined above.
   UINT8   ghsSequence;          // Selected G.hs session as shown in Appendix 1
   UINT8   usPilotFlag;          // Value of 1 indicates transmit an upstream pilot on bin 16
-  UINT8   bDummy1;              // dummy byte for 32-bit alignment
+  UINT8   stdMode_byte2;        // 2nd byte of the desired train mode. This is to be used in conjunction with stdMode.
   UINT8   rMsgs1[38];           // RMSG-1(6) and RMSG_PCB (38)
-  UINT8   bDummy2[2];           // dummy bytes for 32-bit alignment
+  UINT16  stdMode_bytes34;      // Reserved for future use
   UINT32  oamFeature;           // 32 bit wide bit field to set OAM-specific features.
   SINT8   marginThreshold;      // Threshold for margin reporting
   UINT8   hostFixAgc;           // flag to force datapump to bypass AGC training and use the following values
@@ -506,9 +1000,13 @@ typedef struct
   UINT8   missingTones[64];     // 64 element array to define missing tones for TX_MEDLEY and TX REVERB tests
   UINT32  missingToneDsAddr;    // Address given to DSP for tones to be switched off in DS direction
   UINT8   dsToneTurnoff_f;      // This flag controls the DS tone turn off logic
-  UINT8   reserved1;            // Dummy bytes
+  UINT8   mhzFlag;              // Indicates whether DSP runs at 200 v/s 250 Mhz
   UINT8   reserved2;            // Dummy bytes
   UINT8   reserved3;            // Dummy bytes
+  UINT32  mode_config;          // This flag tells the DSP the modes which are enabled by OAM.
+                                // Due to backward compatibility reasons this variable is not OAM write but is in
+                                // fact written by the datapump. This variable is formed by packing stdMode_bytes34,
+                                // stdMode_byte2, and stdMode together.                              
 } DEV_HOST_oamWrNegoParaDef_t;
 
 
@@ -581,9 +1079,10 @@ typedef struct
   UINT8  ntr;               // Enable/disable NTR support
   SINT16 loopAttn;          // Loop Attenuation
   UINT8  vendorRevisionNumber;  // Reported Vendor Revision Number
-  UINT8  reserved1;         // for 32-bit alignment
-  UINT8  reserved2;         // for 32-bit alignment
-  UINT8  reserved3;         // for 32-bit alignment
+  UINT8  maxbits_ds;        // will be set to the minimum between host and CO setting for maxBits.
+// UR8_MERGE_START CQ10448 Ram
+  SINT16 attNdrBits;        // Number of bits minus overhead for max ATTNDR computation
+// UR8_MERGE_END CQ10448 Ram
 } DEV_HOST_msg_t;
 
 
@@ -605,7 +1104,9 @@ typedef struct
 // Begin datapump code overlay definitions.
 // ----------------------------------------
 
-#define DEV_HOST_PAGE_NUM 4   // number of overlay pages
+#define DEV_HOST_PAGE_NUM 11   // number of overlay pages (page 0 + number of overlay pages)
+
+#define MAX_NUM_INIT_STATES 255 // number of states in the DSP state machine
 
 // Never access a struct of this typedef directly.  Always go through the DEV_HOST_olayDpDef_t struct
 typedef struct
@@ -664,6 +1165,16 @@ typedef struct
   UINT32                sefErrors;   // Num of severly errored ADSL frames - LOS > MAXBADSYNC ADSL frames
   UINT32                farEndLosErrors; // Number of reported LOS defects by the CO.
   UINT32                farEndRdiErrors; // Number of reported RDI defects by the CO.
+//  UR8_MERGE_START CQ10979   Jack Zhang
+  SINT32                dsACTPSD;    // Downstream actual power spectral density.
+  SINT32                usACTPSD;    // Upstream actual power spectral density.
+  SINT32                dsHLINSC;    // Downstream linear representation scale.
+  PUINT32               dsHLINps_p;  // Downstream linear channel characteristics per subcarrier.
+//  UR8_MERGE_END   CQ10979*
+//  UR8_MERGE_START CQ10978   Jack Zhang
+  UINT8                 pwrStatus;   // DSL Power Management Status.
+  UINT8                 pad[3];      // pading to 32 bits.
+//  UR8_MERGE_END   CQ10978*
 } DEV_HOST_modemStatsDef_t;
 
 // Never access a struct of this typedef directly.  Always go through the DEV_HOST_atmStats_t struct.
@@ -710,11 +1221,17 @@ typedef struct
   UINT8        serialNumber[32];          // Host write
   UINT8        eocReg4Length;             // Host Write, valid length for EOC register 4
   UINT8        eocReg5Length;             // Host Write, valid length for EOC register 5
-  UINT8        dummy[2];                  // dummy bytes for 32-bit alignment
+  UINT8        selfTestResults[2];        // EOC selftestResults place holder
   UINT32       eocModemStatusReg;         // Dsp Write, status bits to host
   UINT8        lineAtten;                 // Dsp Write, line attenuation in 0.5 db step
   SINT8        dsMargin;                  // DSP Write, measured DS margin
   UINT8        aturConfig[30];            // Dsp Write, also used by EOC for ATUR Configuration
+  UINT8        revNumber_2p[16];          // CQ10037- Host, ATU-R Version Number, used only in ADSL2, ADSL2plus mode.
+// UR8_MERGE_START_END CQ11007 KCCHEN
+  SINT8        usMargin;                  // DSP Write, measured US margin
+  SINT8        reserved[3];               // 32-bit alignment   // UR8_MERGE_START_END CQ11007 Ram
+//UR8_MERGE_START_END CQ10989 ManjulaK
+  UINT8        selfTestResults_2p[4];     // CQ10989-INVTRY selftestResults place holder for ADSL2, ADSL2plus
 } DEV_HOST_eocVarDef_t;
 
 typedef struct
@@ -739,7 +1256,11 @@ typedef struct
 
   SINT16 devCodecRxdf4Coeff[12] ;             // (BOTH) IIR Coefficients
   SINT16 devCodecTxdf2aCoeff[64] ;            // (BOTH) FIR filter coefficients
+#if OHIO_SUPPORT
+  SINT16 devCodecTxdf2bCoeff[84] ;            // (BOTH) FIR filter coefficients
+#else
   SINT16 devCodecTxdf2bCoeff[64] ;            // (BOTH) FIR filter coefficients
+#endif
   SINT16 devCodecTxdf1Coeff[12] ;             // (BOTH) IIR filter coefficients
   UINT16 devCodecTxDf2aDen;                   // (BOTH) denominator for IIR filter
   UINT16 devCodecTxDf2bDen;                   // (BOTH) denominator for IIR filter
@@ -770,6 +1291,11 @@ typedef struct
 
   UINT16 ovhdAocUsBswapReq_f ;                // (BOTH)value to set
   UINT16 ovhdAocScanMse_f  ;                  // (BOTH)value to set
+  UINT16 firstMSESettleTime  ;                // First bitswap starts
+  UINT16 mseSettleTime ;                      // Sequential swaps spacing
+
+  UINT16 powerSwapThreshold  ;                // power swap threshold
+  UINT32 maxMSEThreshold ;                    // MSE threshold
 
   SINT16 phyRevFullFirstBin ;                 //
   SINT16 phyRevFullLastBin ;                  //
@@ -789,11 +1315,15 @@ typedef struct
 
 } DEV_HOST_coData_t ;
 
+
 typedef struct
 {
-  DEV_HOST_coData_t *  hostProfileBase_p;     // base address of profile list
+  DEV_HOST_coData_t             * hostProfileBase_p;                    // base address of profile list
+  UINT32                        * dspScratchMem_p0;                     // base address of DSP scratch memory
+  UINT32                        * dspScratchMem_p1;                     // base address of DSP scratch memory
+  UINT32                        * dspScratchMem_p2;                     // base address of DSP scratch memory
+  UINT32                        * dspScratchMem_p3;                     // base address of DSP scratch memory
 } DEV_HOST_profileBase_t ;
-
 
 
 // -----------------------------------
@@ -953,7 +1483,8 @@ typedef struct
   SINT16   rxPga2;                      // PGA2
   SINT16   rxPga3;                      // PGA3
   SINT16   anlgEq;                      // AEQ settings (dB/MHz)
-  SINT16   rsvd;
+  SINT8    rcvMode;                     // CPE rcv mode for Matlab data processing
+  SINT8    rsvd;
 }DEV_HOST_diagAnlgOutputVar_t;
 
 
@@ -1010,6 +1541,54 @@ typedef struct
   UINT8  bitSwapEnabled;       // bitSwapEnabled
 } DEV_HOST_dspBitSwapDef_t;
 
+// -------------------------------------------
+// Begin OLR DSP Rx definitions for ADSL2 and ADSL2 plus.
+// -------------------------------------------
+// OLR (On-line reconfig) contains the variables and arrays to perform US bitswap
+// DRR and SRA variables can be added in this struct later
+// All fields are DSP write/read with OVHD level2 Rx buffer.
+
+typedef struct
+{
+  UINT8   bitSwapEnabled;               // Enable bitswap
+  UINT8   Index;                        // index to parse msg
+  UINT8   ctrl_field;                   // OLR msg control field
+  UINT8   MsgType;                      // OLR msg type
+  UINT8   NakReason;                    // Negtive Ack and reason
+  UINT8   send_msg_action;              // Transmit/re-transmit msg flag
+  UINT8   resp_msg_action;              // Negative resp msg value
+  UINT8   ss_invert_phase;              // Sending response of inverted phase for sync symbol  
+  UINT16  Nf;                           // number of subcarriers to be modified
+//UR8_MERGE_START CQ10758 Tim  
+  UINT16  Lp;                           // CQ10758: the new total number of bits from SRA   
+  UINT8   Bp;                           // CQ10758: the new Bp from an SRA or DRR
+//UR8_MERGE_END CQ10758 Tim   
+  UINT16  msg_i;                        // Msg index to store bit swap msg
+  UINT8   binnum[MAX_NUM_UPBINS];       // Subcarrier numbers OLR_BSWP_MAX_LEN for US
+  UINT16  gainnbits[MAX_NUM_UPBINS];    // 12-bit gains and 4-bit bits for the subcarrier
+//UR8_MERGE_START_END CQ10758 Tim       
+  UINT8   rxState;
+} DEV_HOST_olrDspRxDef_t;               // CQ10758: struct def for parsing US req bitswap msg
+
+// -------------------------------------------
+// Begin OLR DSP Tx definitions.
+// -------------------------------------------
+// OLR (On-line reconfig) contains the variables to perform DS bitswap
+// DRR and SRA variables can be added in this struct later
+// All fields are DSP write/read with OVHD level2 Tx buffer.
+
+typedef struct
+{
+  UINT8    bitSwapEnabled;               // Enable Bitswap Flag
+  UINT8    ctrl_field;                   // OLR msg control field
+  UINT8    MsgType;                      // OLR msg type
+  UINT8    waitforresp;                  // wait for response flag
+  UINT8    resend_count;                 // retransmit counter to limit resend
+  UINT8    prev_ss_phase;                // Previously detected sync symbol phase
+  UINT16   prev_txmsg_len;               // Previous Tx msg length for resending
+  SINT16   timeoutcnt;                   // wait for response timeout count
+} DEV_HOST_olrDspTxDef_t;                // struct def for generating DS bitswap req
+
 
 // ---------------------------
 // Begin ATM BERT definitions.
@@ -1057,8 +1636,10 @@ typedef struct
                                // If maxAvgFineGainCtrl_f == 1, then the host controls the maximum average fine gain value.
   UINT32 reasonForDrop;        // This field will tell the host what might be the reason for a dropped connection.
   SINT16 maxAverageFineGain;   // When maxAvgFineGainCtrl_f == 1, the value in maxAverageFineGain is the maximum average fine gain level in 256log2 units.
-  UINT8  reserved1;            // These are for 32-bit alignment.
-  UINT8  reserved2;            // These are for 32-bit alignment.
+// UR8_MERGE_START_END CQ10415_CABMODE HL
+  UINT8  CO_cabinet_mode_enabled; // 0 = Default
+                                           // 1 = (Mode is G.992.5 mode) && (CO is Infineon) && (Cabinet mode with DS start tone # >= 100)
+  UINT8  enable_cnxt_ovhd_patch_f;
 } DEV_HOST_modemEnvPublic_t;
 
 
@@ -1110,6 +1691,93 @@ typedef struct
   PSINT16 buffer2_p;          //DSP write
 } DEV_HOST_snrBuffer_t;
 
+// ---------------------------------------------------------------------------------
+// Typedef to be used for the clear EOC HDLC frame exchange between host and DSP,
+// used in ovhd_eoc.c
+// ---------------------------------------------------------------------------------
+
+#define OVHD_clearEOC_hostBufSize 600       // overhead clear EOC HDLC host buffer size
+#define OVHD_clearEOC_hostBuffers 4         // number of overhead clear EOC HDLC host buffers in Rx or Tx
+
+typedef struct
+{
+  UINT32 len;                               // packet length
+  UINT8  data[OVHD_clearEOC_hostBufSize];   // data field
+} clearEocBufDesc_t;
+
+typedef struct
+{
+  UINT32 clearEocEnabled;                   // 0 -- disabled; 1 -- enabled.
+  clearEocBufDesc_t  *pTxBufDesc[OVHD_clearEOC_hostBuffers];   // Tx buffer desc pointer array
+  clearEocBufDesc_t  *pRxBufDesc[OVHD_clearEOC_hostBuffers];   // Rx buffer desc pointer array
+  UINT32 txRdIndex;                          // DSP read
+  UINT32 txWrIndex;                          // Host write
+  UINT32 rxRdIndex;                          // Host read
+  UINT32 rxWrIndex;                          // DSP write
+} DEV_HOST_clearEocParm_t;
+
+
+typedef struct
+{
+  UINT32 phyFeature;                       // Feature bits
+  UINT32 phyControl;                       // Control bits
+} DEV_HOST_phyFeatureConfiguration_t;
+
+typedef struct
+{
+  DEV_HOST_phyFeatureConfiguration_t   * phyFeatureList0_p; // Pointer to Feature List 0
+  DEV_HOST_phyFeatureConfiguration_t   * phyFeatureList1_p; // Pointer to Feature List 1
+  DEV_HOST_phyFeatureConfiguration_t   * phyInteropList0_p; // Pointer to Interop feature list 0
+  DEV_HOST_phyFeatureConfiguration_t   * phyInteropList1_p; // Pointer to Interop feature list 1
+} DEV_HOST_phyControlStructure_t;
+
+//Management counters (moved from ovhd_bis_mgmt.h)
+
+//WARNING!
+//The order of this structure is critical as it mirrors the ADSL2
+//management overhead message and we take advantage of this as part of an
+//optimization in ovvhd_bis_mgmt.c.  Do not change the order or remove
+//anything and if you need to make an addition, it must be an integer
+//and it must be added to the end
+typedef struct {
+  //PMD and PMS-TC counters
+  UINT32 fec_errors;              //fec anomalies
+  UINT32 crc_errors;              //crc anomalies
+  UINT32 fec_errored_seconds;     //FEC errored seconds counter
+  UINT32 errored_seconds;         //errored seconds counter
+  UINT32 severly_errored_seconds; //severly errored seconds counter
+  UINT32 los_errored_seconds;     //los errored seconds counter
+  UINT32 unavailable_seconds;     //unavailable errored seconds counter
+  //TPS-TC counters
+  UINT32 hec_errors;              //HEC anomalies counters
+  UINT32 total_cells_thro_HEC;    //counter of total cells passed through HEC function
+  UINT32 total_cells_to_ATM;      //counter of total cells passed to the upper ATM function
+  UINT32 bit_errors_idle_cells;   //counter of total bit errors detected in ATM idle cells payload
+}BIS_MGMT_CountersDef_t;
+
+typedef struct
+{
+  BIS_MGMT_CountersDef_t *bis_Mgmt_Count_US_p;
+  BIS_MGMT_CountersDef_t *bis_Mgmt_Count_DS_p;
+//  UR8_MERGE_START CQ10979   Jack Zhang
+  UINT32                totalInitErrs;    // Total number of Initialization Errors.
+  UINT32                totalInitTOs;     // Total number of Initialization Timeout Errors.
+  UINT32                showtimeInitErrs; // Number of Init. Errs since the most recent showtime.
+  UINT32                showtimeInitTOs;  // Number of Init. Timeout Errs. since the most recent showtime.
+  UINT32                lastshowInitErrs; // Number of Init. Errs since the 2nd most recent showtime.
+  UINT32                lastshowInitTOs;  // Number of Init. Timeout Errs. since the 2nd most recent showtime.
+//  UR8_MERGE_END   CQ10979*
+} DEV_HOST_MGMTCount_t;
+
+typedef struct //(CQ10242)
+{
+ UINT8          redirect;              // set by NSP
+ UINT8          ack;                   // set by datapump to acknowledge redirect
+ UINT16         buffsize;              // size of debug buffer in chars
+ PUINT8         buffaddr;              // address of debug buffer (an array of char)
+} DEV_HOST_Cli2lctl_t;
+
+
 // --------------------------------------------------------------------------------------
 // Typedef to be used for the DEV_HOST_dspOamSharedInterface_s struct of pointers
 //  (this is used in dev_host_interface.c).
@@ -1150,6 +1818,12 @@ typedef struct
   DEV_HOST_ghsDspRxBufDef_t        *ghsDspRxBuf_p;
   DEV_HOST_consBufDef_t            *consDispVar_p;
   DEV_HOST_snrBuffer_t             *snrBuffer_p;
+  DEV_HOST_olrDspRxDef_t           *olrDspRx_p;
+  DEV_HOST_olrDspTxDef_t           *olrDspTx_p;
+  DEV_HOST_clearEocParm_t          *pClrEOC_p;
+  DEV_HOST_phyControlStructure_t   *phyControl_p;
+  DEV_HOST_MGMTCount_t             *mgmt_Count_p;
+  DEV_HOST_Cli2lctl_t              *cli_p;  //(CQ10242)
 } DEV_HOST_dspOamSharedInterface_t;
 
 

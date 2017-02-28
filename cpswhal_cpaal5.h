@@ -256,6 +256,7 @@ typedef struct
 #define _CPMDIO_100                     (1 << 4)
 #define _CPMDIO_NEG_OFF                 (1 << 5)
 #define _CPMDIO_LOOPBK                  (1 << 16)
+#define _CPMDIO_AUTOMDIX                (1 << 17)   /* Bit 16 and above not used by MII register */
 #define _CPMDIO_NOPHY                   (1 << 20)
 #endif
 
@@ -624,6 +625,8 @@ extern const char hcPhyNum[];
 extern const char hcSize[];
 extern const char hcCpmacSize[];
 extern const char hcPhyAccess[];
+extern const char hcMdixMask[];
+extern const char hcMdioMdixSwitch[];
 #endif
 
 #endif  /*  end of _INC_    */
