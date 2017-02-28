@@ -185,14 +185,14 @@
 *    04Nov05     0.11.00            CPH     Fixed T1413 mode got Zero DS/US rate when DSL_BIT_TMODE is set.
 *
 *    23Nov05     0.12.00            CPH     Added set LPR when get DSP_GASP.
-*    30Nov05     0.12.01            KM/JZ   CQ10226: Added processing Loss of Framing (LOF) in 
-*                                           dslhal_api_processMailBox(), and setting errored seconds in 
+*    30Nov05     0.12.01            KM/JZ   CQ10226: Added processing Loss of Framing (LOF) in
+*                                           dslhal_api_processMailBox(), and setting errored seconds in
 *                                           dslhal_api_gatherStatistics().
-*    01Dec05     0.12.00            AV      Fixed an issue with dslhal_api_boostDspFrequency(), where it 
+*    01Dec05     0.12.00            AV      Fixed an issue with dslhal_api_boostDspFrequency(), where it
 *                                           sometimes would not boost the DSP frequency for Ohio chips.
 *    08Aug06     0.13.00            GPet/CPH CQ 10242: Added CLI2Host support. (token:CLI2HOST_SUPPORT)*
 * UR8_MERGE_START  Report_SES       Manjula K
-*    14Mar06       0.14.00          MK            CQ10369: Added code to report severly errored seconds in 
+*    14Mar06       0.14.00          MK            CQ10369: Added code to report severly errored seconds in
 *                                                 dslhal_api_gatherStatistics(
 * UR8_MERGE_END  Report_SES
 * UR8_MERGE_START  CQ10386          PeterHou
@@ -202,7 +202,7 @@
 *    28Mar06       0.16.00          GPet          CQ10411: Fixed CLIredirect reboot crash
 * UR8_MERGE_END GERALD_CQ_REDIRECT_BUGFIX2_20060328
 * UR8_MERGE_START  CQ10481          Jack Zhang
-*    21Apr06       0.16.00          Jack Zhang    CQ10481: Selected Mode" in /proc/avalanche/avsar_modem_stats 
+*    21Apr06       0.16.00          Jack Zhang    CQ10481: Selected Mode" in /proc/avalanche/avsar_modem_stats
 *                                                 not displaying correct value
 * UR8_MERGE_END    CQ10481
 * UR8_MERGE_START  CQ10499          Jack Zhang
@@ -212,10 +212,10 @@
 *    31May06       0.17.00          MK            CQ10442: Added code to handle mailbox message for SRA in
 *                                                 dslhal_api_processMailBox()
 * UR8_MERGE_END    CQ10442
-* UR8_MERGE_START  CQ10905          Jeremy L 
+* UR8_MERGE_START  CQ10905          Jeremy L
 *    05Sept06                                     CQ10905: Modified HAL to display TrainedPath
 * UR8_MERGE_END    CQ10905                        correctly for ADSL2/2+
-* 
+*
  * UR8_MERGE_START CQ10880   Jack Zhang
  * 8/30/06  JZ   CQ10880: Add DSL HAL API for sending mailbox message for L3
  * UR8_MERGE_END   CQ10880*
@@ -232,16 +232,16 @@
 // 10/12/06 Kuan-Chen Chen   CQ11057: Request US PMD test parameters from CO side
 // UR8_MERGE_END CQ11057 KCCHEN
 *  UR8_MERGE_START   CQ11228 HZ
-*  12/08/06     Hao Zhou CQ11228: Modify the DS Margin report to 0.1dB precision, also take care of 
+*  12/08/06     Hao Zhou CQ11228: Modify the DS Margin report to 0.1dB precision, also take care of
 *                                 possible negative values.
-*  UR8_MERGE_END   CQ11228 HZ 
+*  UR8_MERGE_END   CQ11228 HZ
 *  UR8_MERGE_START CQ11054   Jack Zhang
 *  10/11/06  JZ     CQ11054: Data Precision and Range Changes for TR-069 Conformance
 *  UR8_MERGE_END   CQ11054*
 *  UR8_MERGE_START_END CQ11247_TR69_DS_LATN_SATN  YW
-*  12/18/06   Yan Wang      CQ11247: TR069 range and precision changes for LATNds, SATNds  
+*  12/18/06   Yan Wang      CQ11247: TR069 range and precision changes for LATNds, SATNds
 *  UR8_MERGE_START   CQ11227 KCCHEN
-*  01/02/07     KuanChen Chen CQ11227: ADSL1 upstream max rate report. Customer wants to access the 
+*  01/02/07     KuanChen Chen CQ11227: ADSL1 upstream max rate report. Customer wants to access the
 *                                      upstream max rate through the CoPMDTestParams_t struct.
 *  UR8_MERGE_END   CQ11227 KCCHEN
 *  UR8_MERGE_START_END CQ11446 Nima :Added handling of BROWNOUT message for dying gasp
@@ -253,6 +253,25 @@
 *                            Also updated dslhal_api_readPhyFeatureSettings to equate the content
 *                            of phyEnableDisableWord & phyControlWord to avoid changing API struct
 *                            which may cause change required to application data structure.
+*  UR8_MERGE_START_END CQ11579 Tim
+*  03/29/07  Tim    CQ11579: Allow SNR reads in ADSL1 and fixed the ADSL1 PCB calculation
+*  UR8_MERGE_START CQ11579 Jeremy : Corrected handling of usPowerCutback for ADSL1
+*  04/02/07                         included T1413 for if statement comparison
+*  UR8_MERGE_END CQ11579
+*  UR8_MERGE_START CQ11544 Tim
+*  04/16/07  Tim    CQ11544: Add support for uncancelled echo metric
+*  UR8_MERGE_START_END CQ11709 Tim
+*  05/01/07  Tim    CQ11709: Added support for AT&T priority 1 statistics
+*  UR8_MERGE_START_END CQ11803 KCCHEN/Ram
+*  06/12/07   Ram   CQ11803: Added new API to compute Delta US Attainable NDR
+*  UR8_MERGE_START CQ11813 Hao-Ting
+*  06/08/07  Hao-Ting CQ11813:CLI redirect support in linux
+*                             Mark unused function in linux use LINUX_CLI_SUPPORT flag
+*  UR8_MERGE_END CQ11813 Hao-Ting
+*  09/12/07 EYin     CQ11929: Added NFEC/INP/Lp/Rp reporting for both US and DS in
+*                             dslhal_api_gatherStatistics()
+*  09/15/07  CPH    CQ11466  Added EFM support
+*  09/27/07  EYin   CQ11929: Added NFEC/INP/Lp/Rp reporting for only ADSL2/2+ mode.
 ******************************************************************************/
 #include <dev_host_interface.h>
 #include <dsl_hal_register.h>
@@ -290,6 +309,11 @@ static short dslhal_staticapi_getHlog(tidsl_t *ptidsl,unsigned int index);
 #define MAX_PHY_FEATURE_PARAMID                    3  // Currently 4 parameter IDs exist:
                                                       // 0-1 for Phy features and 2-3 for Interop
                                                       // features.
+
+#define DDI_RX_MSG_DELAY_OFFSET   1040
+#define DDI_RX_MSG_LP_OFFSET      1116
+#define DDI_TX_MSG_DELAY_OFFSET   268
+#define DDI_TX_MSG_LP_OFFSET      292
 
 #ifdef PRE_SILICON
 /*********************************************/
@@ -342,6 +366,7 @@ static short dslhal_staticapi_getHlog(tidsl_t *ptidsl,unsigned int index);
 
 #define DEV_MDMA_LEN_SHF           2
 #define DEV_MDMA_LEN_MASK          0x0000FFFF
+
 
 #define DMA0   0
 #define DMA1   1
@@ -674,6 +699,10 @@ static int dslhal_api_processMailBox(tidsl_t *ptidsl,
   int cmd;
   int tag;
   int parm1,parm2;
+#ifdef EFM_DEBUG
+extern unsigned int g_efm_proc_ctl;
+#endif
+
 //  unsigned int msg1;
 //  unsigned int msg2;
   int rc;
@@ -915,12 +944,39 @@ case DSP_BROWNOUT:
       //UR8_MERGE_START CQ10442 Manjula K
       case DSP_SRA:
       {
-        dgprintf(0,"\nDSP_SRA!!! tag=%02x, cmd1=%02x, cmd2=%02x\n",  tag, parm1, parm2);                  
-        ptidsl->AppData.DSConRate = (parm2<<8) | parm1;               
-        ptidsl->AppData.SRA = 1;    
+        dgprintf(0,"\nDSP_SRA!!! tag=%02x, cmd1=%02x, cmd2=%02x\n",  tag, parm1, parm2);
+        ptidsl->AppData.DSConRate = (parm2<<8) | parm1;
+        ptidsl->AppData.SRA = 1;
         break;
       }
       //UR8_MERGE_END CQ10442
+#ifdef AR7_EFM
+      //UR8_MERGE_START CQ11466
+      case DSP_GHS_TCMODE:
+      {
+
+#ifdef EFM_DEBUG
+    // toggle mode for auto-switch testing...
+    if (g_efm_proc_ctl & 8)
+    {
+        if (ptidsl->ghs_TCmode==0)
+           ptidsl->ghs_TCmode = parm1;
+        else
+        {
+          if (ptidsl->ghs_TCmode== TC_MODE_ATM) // hack hack!!
+             parm1 = TC_MODE_PTM; // override
+          else
+             parm1 = TC_MODE_ATM;
+        }
+     }
+#endif
+        ptidsl->ghs_TCmode = parm1;
+
+        ptidsl->configFlag |= CONFIG_FLAG_TC; // indicate TC Mode set
+        break;
+      }
+      //UR8_MERGE_END CQ10442
+#endif
 
       default:
       {
@@ -1347,7 +1403,7 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
 #endif
   // UR8_MERGE_START CQ11057 KCCHEN
   DEV_HOST_BIS_PMD_TEST_PARAMETERS_FROM_CO_Def_t *BisPmdTestParametersUS_p;
- // UR8_MERGE_START_END CQ11247_TR69_DS_LATN_SATN  YW  
+ // UR8_MERGE_START_END CQ11247_TR69_DS_LATN_SATN  YW
   SINT16                  usMargin;
   int                  usMargintmp;
   int offset_BisPmdTestParametersUS[] = {7,20};
@@ -1358,6 +1414,48 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
   int offset[]= {7, 11};        // DEV_HOST_modemEnv_t.ghsATUCVendorIdAddr
 //  UR8_MERGE_START_END   CQ11228 HZ
   SINT16                dsMargintmp;
+
+  unsigned int *recvMsg_p, *xmtMsg_p;
+  unsigned int recvMsgAddr_offset[2]={7, 17}; //DEV_HOST_modemEnv_t.recvMsgAddr
+  unsigned int xmtMsgAddr_offset[2]={7, 18};  //DEV_HOST_modemEnv_t.xmtMsgAddr
+
+  struct {
+        unsigned char dummy;
+        unsigned char n;                  ///< Number of bytes in FEC output frame
+        unsigned char k;                  ///< Number of bytes in MUX frame, before FEC
+        unsigned char r;                  ///< FEC redundancy byte number in fast path
+        unsigned char D;                  ///< interleave depth
+        unsigned char s;                  ///< Number of frames per codeword
+        unsigned short dummy1;            // 32bit alignment
+  }xmtMsg;
+
+  struct {
+        //unsigned short dummy;
+        unsigned short Lp;                 ///< Lp;
+        unsigned short dummy;
+  }xmtMsg_1;
+
+  struct {
+        unsigned char dummy;           ///< Ping Pong buffer rx_collect index
+        unsigned char r;                  ///< FEC redundancy byte number in fast path
+        unsigned short D;                  ///< interleave depth
+        unsigned short k;                  ///< Number of bytes in MUX frame, before FEC
+        unsigned short n;                  ///< Number of bytes in FEC output frame
+        unsigned char  s;                  ///< Number of frames per codeword
+        unsigned char  rx_s_half;          ///< Flag to indicate s=1/2
+        unsigned char  Nflag;              ///< Flag to indicate that N1 and N2 are not equal
+        unsigned char  gap;                ///< gap to make sure that second codeword starts at word boundary
+        unsigned short K1;                 ///< No of information bytes of codeword 0
+        unsigned short K2;                 ///< No of Information bytes of codeword 1
+        unsigned short N1;                 ///< Codeword 0 size
+        unsigned short dummy1;
+  }recvMsg;
+
+  struct {
+        unsigned short dummy;
+        unsigned short Lp;                 ///< Lp;
+  }recvMsg_1;
+
 
   dgprintf(5, "dslhal_api_gatherStatistics\n");
 
@@ -1425,8 +1523,8 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
     if(ptidsl->AppData.dsl_modulation < ADSL2_MODE)
       {
         // UR8_MERGE_START CQ11247_TR69_DS_LATN_SATN  YW
-        ptidsl->AppData.usLineAttn = ((ptidsl->AppData.bCMsgs2[3] >>2)&0x003f); // 0.5dB step 
-        ptidsl->AppData.usMargin = (ptidsl->AppData.bCMsgs2[2])&0x001f; // 1dB step 
+        ptidsl->AppData.usLineAttn = ((ptidsl->AppData.bCMsgs2[3] >>2)&0x003f); // 0.5dB step
+        ptidsl->AppData.usMargin = (ptidsl->AppData.bCMsgs2[2])&0x001f; // 1dB step
         if (dslhal_api_getHighPrecision())
         {
           ptidsl->AppData.usLineAttn *= 5; // 0.1dB step
@@ -1458,6 +1556,7 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
         }
         // UR8_MERGE_END CQ11247_TR69_DS_LATN_SATN  YW
       }
+
     if((rateparms.cRates2 & 0x0f) == 0x01)
       optIdxU = 0;
     else if((rateparms.cRates2 & 0x0f) == 0x02)
@@ -1511,7 +1610,7 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
       }
     // UR8_MERGE_START - CQ10905 - Jeremy L
     // checks to see if ADSL2 or ADSL2 Annex M
-    else if (dslhal_support_getTrainedMode(ptidsl) == 8 || dslhal_support_getTrainedMode(ptidsl) == 1024) 
+    else if (dslhal_support_getTrainedMode(ptidsl) == 8 || dslhal_support_getTrainedMode(ptidsl) == 1024)
       {
     // ADSL2 R-PARAMs message is 808 in length
     // Rp and Dp are in the 10th octet per 992.3, but of the PMS-TC section of R-PARAMS which is after PMD-TC
@@ -1531,7 +1630,7 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
             ptidsl->AppData.TrainedPath = INTERLEAVED_PATH;
       }
      // UR8_MERGE_END - CQ10905 - Jeremy L
-     
+
     /* Set the mode in which the modem is trained */
 #if 0 //cph99
     ptidsl->AppData.TrainedMode = TrainedModeEx;
@@ -1652,7 +1751,14 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
       ptidsl->AppData.dsACTPSD = dslhal_support_byteSwap32(StatisticsDef.dsACTPSD);
       ptidsl->AppData.usACTPSD = dslhal_support_byteSwap32(StatisticsDef.usACTPSD);
       ptidsl->AppData.dsHLINSC = dslhal_support_byteSwap32(StatisticsDef.dsHLINSC);
+//UR8_MERGE_START CQ11544 Tim
+      ptidsl->AppData.uncancelledEcho = dslhal_support_byteSwap16(StatisticsDef.uncancelledEcho);
 //  UR8_MERGE_END   CQ10979*
+      //UR8_MERGE_START CQ11709 Tim
+      ptidsl->AppData.dsHlogMT = dslhal_support_byteSwap16(StatisticsDef.dsHlogMT);
+      ptidsl->AppData.dsSNRMT = dslhal_support_byteSwap16(StatisticsDef.dsSNRMT);
+      ptidsl->AppData.dsQLNMT = dslhal_support_byteSwap16(StatisticsDef.dsQLNMT);
+      //UR8_MERGE_END CQ11709 Tim
 //  UR8_MERGE_START CQ10978   Jack Zhang
       ptidsl->AppData.pwrStatus = StatisticsDef.pwrStatus;
 //  UR8_MERGE_END   CQ10978*
@@ -1757,9 +1863,7 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
 
       ptidsl->AppData.FrmMode         = (unsigned int)atuc_msg.framingMode;
       ptidsl->AppData.MaxFrmMode      = (unsigned int)atuc_msg.maxFrameMode;
-
       /* Determine Gross Gain */
-
       dspOamSharedInterface.aturMsg_p = (DEV_HOST_msg_t *) dslhal_support_byteSwap32((unsigned int)dspOamSharedInterface.aturMsg_p);
 
       rc = dslhal_support_blockRead((PVOID)dspOamSharedInterface.aturMsg_p,&aturMsg, sizeof(DEV_HOST_msg_t));
@@ -1789,7 +1893,7 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
       if (dslhal_api_getHighPrecision() == 0)
       {
         ptidsl->AppData.dsLineAttn /= 5; // 0.5dB step
-      }      
+      }
       // UR8_MERGE_END CQ11247_TR69_DS_LATN_SATN  YW
 //  UR8_MERGE_START   CQ11228 HZ
       dsMargintmp = (SINT16)dslhal_support_byteSwap16(eocVar.dsMargin);
@@ -1800,7 +1904,7 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
       {
         ptidsl->AppData.dsMargin        = (((signed int)dsMargintmp)*13107 + 0x8000) >> 16; // divide 5 to get 0.5 dB units
       }
-//  UR8_MERGE_END   CQ11228 HZ      
+//  UR8_MERGE_END   CQ11228 HZ
     }
   }
 
@@ -1822,12 +1926,12 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
 //      printf("erroredSeconds: %X, errored_seconds: %X \n", ptidsl->AppData.erroredSeconds, BIS_MGMT_Counters.errored_seconds);
 //      printf("severelyerrsecs: %X, severly_errored_seconds: %X \n", ptidsl->AppData.severelyerrsecs, BIS_MGMT_Counters.severly_errored_seconds); //UR8_MERGE_END Report_SES Manjula K
 //  UR8_MERGE_START CQ10979   Jack Zhang
-      ptidsl->AppData.totalInitErrs    = dslhal_support_byteSwap32((unsigned int)mgmt_Count.totalInitErrs); 
-      ptidsl->AppData.totalInitTOs     = dslhal_support_byteSwap32((unsigned int)mgmt_Count.totalInitTOs); 
-      ptidsl->AppData.showtimeInitErrs = dslhal_support_byteSwap32((unsigned int)mgmt_Count.showtimeInitErrs); 
-      ptidsl->AppData.showtimeInitTOs  = dslhal_support_byteSwap32((unsigned int)mgmt_Count.showtimeInitTOs); 
-      ptidsl->AppData.lastshowInitErrs = dslhal_support_byteSwap32((unsigned int)mgmt_Count.lastshowInitErrs); 
-      ptidsl->AppData.lastshowInitTOs  = dslhal_support_byteSwap32((unsigned int)mgmt_Count.lastshowInitTOs); 
+      ptidsl->AppData.totalInitErrs    = dslhal_support_byteSwap32((unsigned int)mgmt_Count.totalInitErrs);
+      ptidsl->AppData.totalInitTOs     = dslhal_support_byteSwap32((unsigned int)mgmt_Count.totalInitTOs);
+      ptidsl->AppData.showtimeInitErrs = dslhal_support_byteSwap32((unsigned int)mgmt_Count.showtimeInitErrs);
+      ptidsl->AppData.showtimeInitTOs  = dslhal_support_byteSwap32((unsigned int)mgmt_Count.showtimeInitTOs);
+      ptidsl->AppData.lastshowInitErrs = dslhal_support_byteSwap32((unsigned int)mgmt_Count.lastshowInitErrs);
+      ptidsl->AppData.lastshowInitTOs  = dslhal_support_byteSwap32((unsigned int)mgmt_Count.lastshowInitTOs);
 //  UR8_MERGE_END   CQ10979*
     }
     else
@@ -1898,7 +2002,7 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
   /* us bit allocation */
   sharedTables.bitAllocTblUstrm_p = (unsigned char *)dslhal_support_byteSwap32((unsigned int)sharedTables.bitAllocTblUstrm_p);
 //UR8_MERGE_START CQ10499   Jack Zhang
-  rc = dslhal_support_blockRead((PVOID)sharedTables.bitAllocTblUstrm_p,ptidsl->AppData.BitAllocTblUstrm, 
+  rc = dslhal_support_blockRead((PVOID)sharedTables.bitAllocTblUstrm_p,ptidsl->AppData.BitAllocTblUstrm,
                                        ptidsl->AppData.max_us_tones*sizeof(unsigned char));
 //UR8_MERGE_END CQ10499   Jack Zhang
   if(rc)
@@ -2002,6 +2106,38 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
     }
 
 #endif
+  }
+
+  // NFEC, INP, Lp, Rp only support in ADSL2/2+ mode
+  if ((ptidsl->AppData.bState == RSTATE_SHOWTIME)&&
+      (ptidsl->AppData.TrainedMode & (ADSL2PLUS_MASKS|ADSL2_MASKS)))
+  {
+    // read internal data structure to get INP, Rp, Lp and NFEC
+    recvMsg_p = (unsigned int *) dslhal_support_readInternalOffset(ptidsl, 2, recvMsgAddr_offset);
+    dslhal_support_blockRead((void *) recvMsg_p+DDI_RX_MSG_DELAY_OFFSET, &recvMsg, 20);
+    dslhal_support_blockRead((void *) recvMsg_p+DDI_RX_MSG_LP_OFFSET, &recvMsg_1, 4);
+
+    xmtMsg_p = (unsigned int *) dslhal_support_readInternalOffset(ptidsl, 2, xmtMsgAddr_offset);
+    dslhal_support_blockRead((void *) xmtMsg_p+DDI_TX_MSG_DELAY_OFFSET, &xmtMsg, 8);
+    dslhal_support_blockRead((void *) xmtMsg_p+DDI_TX_MSG_LP_OFFSET, &xmtMsg_1, 4);
+
+    ptidsl->AppData.dsLp=dslhal_support_byteSwap16(recvMsg_1.Lp);
+    recvMsg.D=dslhal_support_byteSwap16(recvMsg.D);
+    if (ptidsl->AppData.dsLp)
+      ptidsl->AppData.dsINP= (4*recvMsg.r*recvMsg.D)/ptidsl->AppData.dsLp; //(4*S*D)/L
+    ptidsl->AppData.dsNFEC=dslhal_support_byteSwap16(recvMsg.N1);
+    ptidsl->AppData.dsRp=recvMsg.r;
+
+
+    ptidsl->AppData.usLp=dslhal_support_byteSwap16(xmtMsg_1.Lp);
+    if (ptidsl->AppData.usLp)
+      ptidsl->AppData.usINP= (4*xmtMsg.r*xmtMsg.D)/ptidsl->AppData.usLp; //(4*S*D)/L
+    ptidsl->AppData.usNFEC=(xmtMsg.s*xmtMsg.k+xmtMsg.r);
+    ptidsl->AppData.usRp=xmtMsg.r;
+
+    //printf("US: Lp=%d,INP=%d,NFEC=%d,R=%d\n",ptidsl->AppData.usLp,ptidsl->AppData.usINP,ptidsl->AppData.usNFEC,ptidsl->AppData.usRp);
+
+    //printf("DS: Lp=%d,INP=%d,NFEC=%d,R=%d\n",ptidsl->AppData.dsLp,ptidsl->AppData.dsINP,ptidsl->AppData.dsNFEC,ptidsl->AppData.dsRp);
   }
 
   if (ptidsl->AppData.bState == RSTATE_SHOWTIME)
@@ -2354,7 +2490,7 @@ unsigned int dslhal_api_setEocRevisionNumber(tidsl_t *ptidsl,char *RevNumber)
   int rc;
   int count=0;  //CQ10037
   char *temp = RevNumber; //CQ10037
-  
+
   dgprintf(5," dslhal_api_setEocRevisionNumber()\n");
 
   if(!ptidsl)
@@ -2382,20 +2518,20 @@ unsigned int dslhal_api_setEocRevisionNumber(tidsl_t *ptidsl,char *RevNumber)
     dgprintf(1,"dslhal_support_blockRead failed\n");
     return DSLHAL_ERROR_BLOCK_READ;
   }
-  
+
   //CQ10037: If length of RevNumber is 16 bytes , then it is used to set version number in ADSL2, ADSL2+ modes
   // else it is used to set revision number in G.992.1 mode.
-  
-  while (*temp++ != '\0') count++;                    
-  
+
+  while (*temp++ != '\0') count++;
+
    if (count==16)
   {
-    shim_osMoveMemory(eocVar.revNumber_2p,RevNumber,16);    
+    shim_osMoveMemory(eocVar.revNumber_2p,RevNumber,16);
   }
   else {
-    shim_osMoveMemory(eocVar.revNumber,RevNumber,4);   
+    shim_osMoveMemory(eocVar.revNumber,RevNumber,4);
   }
-    
+
   rc=dslhal_support_blockWrite(&eocVar,dspOamSharedInterface.eocVar_p,sizeof(DEV_HOST_eocVarDef_t));
   if(rc)
     return DSLHAL_ERROR_EOCREG_API_FAILURE;
@@ -2429,7 +2565,7 @@ unsigned int dslhal_api_boostDspFrequency(void)
   }
 
   chipId= DSLHAL_REG32(REG_CVR) & 0xFFFF;
-  switch (chipId) 
+  switch (chipId)
   {
   case CHIP_AR7:  /* Sangam */
     dgprintf(4, "Sangam clock boost 250\n");
@@ -2477,7 +2613,7 @@ unsigned int dslhal_api_boostDspFrequency(void)
       dgprintf(4, "Ohio clock boost 250\n");
 
       triggerDsp250MHZ = 1;
-      
+
       for(retry_attmpts = 0; retry_attmpts <= PWR_DN_RETRYS; retry_attmpts++)
       {
           /* Ensure that the peripherals in the ADSLSS are in reset */
@@ -2583,7 +2719,7 @@ unsigned int dslhal_api_boostDspFrequency(void)
           return DSLHAL_ERROR_RESET_ADSLSS;
     }
     else
-    {   
+    {
         /* We cannot boost the frequency. */
         return(DSLHAL_ERROR_GENERAL_FAILURE);
     }
@@ -3687,7 +3823,7 @@ unsigned int dslhal_api_dspInterfaceWrite(tidsl_t * ptidsl,unsigned int baseAddr
  * FUNCTION NAME:    dslhal_api_sendL3Command(tidsl_t *ptidsl)
  *
  *******************************************************************************************
- * DESCRIPTION: This fuction sends a L3 command to the DSP via the mailbox message 
+ * DESCRIPTION: This fuction sends a L3 command to the DSP via the mailbox message
  *
  * INPUT:  PITIDSLHW_T *ptidsl
  *
@@ -3855,7 +3991,9 @@ unsigned int dslhal_api_getAdvancedStats(tidsl_t * ptidsl)
     return rc;
   }
   phyPerf.usAvgGain = dslhal_support_byteSwap32(phyPerf.usAvgGain);
-  if(ptidsl->AppData.dsl_modulation < ADSL2_MODE)
+// UR8_MERGE_START - CQ11579 - Jeremy
+  if((ptidsl->AppData.dsl_modulation < 5) || (ptidsl->AppData.dsl_modulation == 128))
+// UR8_MERGE_END - CQ11579 - Jeremy
     usPowerCutBack = US_NOMINAL_POWER;
   else
     {
@@ -3891,15 +4029,22 @@ unsigned int dslhal_api_getAdvancedStats(tidsl_t * ptidsl)
   /* D/S Power Computation */
   /* D/S Power Cutback */
   if(ptidsl->AppData.dsl_modulation < ADSL2_MODE)
-    dsPowerCutBack = 2*((((((ptidsl->AppData.bCMsgs1[0]) >>6) &0x3)+(((ptidsl->AppData.bCMsgs1[1]) &0x1) <<2))) - 1) - 52;
+  {
+    dsPowerCutBack = (((ptidsl->AppData.bCMsgs1[0]) >>6) &0x3) + (((ptidsl->AppData.bCMsgs1[1]) &0x1) <<2);
+    dsPowerCutBack <<= 1;
+    dsPowerCutBack = -40 - dsPowerCutBack;
+  }
   else
-    {
-      dsPowerCutBack = (ptidsl->adsl2TrainingMessages.rMsgPcb[0] & 0x3f);
-      rc = (ptidsl->adsl2TrainingMessages.cMsgPcb[0] & 0x3f);
-      if(dsPowerCutBack < rc)
-        dsPowerCutBack = rc;
-      dsPowerCutBack = -40 - dsPowerCutBack;
-    }
+  {
+    //UR8_MERGE_START CQ11579 Tim
+    //CQ11579: Fixed the PCB calculation for ADSL1
+    dsPowerCutBack = (ptidsl->adsl2TrainingMessages.rMsgPcb[0] & 0x3f);
+    rc = (ptidsl->adsl2TrainingMessages.cMsgPcb[0] & 0x3f);
+    if(dsPowerCutBack < rc)
+      dsPowerCutBack = rc;
+    dsPowerCutBack = -40 - dsPowerCutBack;
+    //UR8_MERGE_END CQ11579 Tim
+  }
   phyPerf.dsAvgGain = dslhal_support_byteSwap32(phyPerf.dsAvgGain);
   ptidsl->AppData.dsTxPower = LOG43125 + phyPerf.dsAvgGain + (256*dsPowerCutBack) + log10[dsNumLoadedTones-1];
   dgprintf(7,"Avg Gain: %d  dsNumLoadedTones: %d  log: %d  pcb: %d \n",phyPerf.dsAvgGain, dsNumLoadedTones, log10[dsNumLoadedTones-1], dsPowerCutBack);
@@ -3954,7 +4099,7 @@ unsigned int dslhal_api_getAdvancedStats(tidsl_t * ptidsl)
 *         int flag: 0: training. (1: showtime).
 *         **Note: Currently only showtime is supported.
 // UR8_MERGE_START   CQ11227 KCCHEN
-*         Note: In ADSL1 mode, only upstream snr margin and attndr are valid. The other items in 
+*         Note: In ADSL1 mode, only upstream snr margin and attndr are valid. The other items in
 *               CoPMDTestParams_t are invalid.
 // UR8_MERGE_END   CQ11227 KCCHEN
 *
@@ -3970,16 +4115,16 @@ unsigned int dslhal_api_getPMDTestus(tidsl_t * ptidsl, CoPMDTestParams_t * co_pm
     PHYS_TO_K1(dslhal_support_readInternalOffset(ptidsl, 2, offset));
   int i, num_swap32;
   unsigned int *outbufInt_p= (unsigned int *) co_pmdtest_params_p;
-   
+
   dgprintf(5,"dslhal_api_getUSPMD\n");
 
   if (flag!=1)
     return DSLHAL_ERROR_INVALID_PARAM;
 
-  // UR8_MERGE_START_END   CQ11227 KCCHEN Changed to allow customers to 
+  // UR8_MERGE_START_END   CQ11227 KCCHEN Changed to allow customers to
   // access co_attndr in CoPMDTestParams_t struct
   num_swap32 = (sizeof(CoPMDTestParams_t))>>2;
-  
+
   for (i=0; i< num_swap32; i++)
   {
     *outbufInt_p++= dslhal_support_byteSwap32(*USPMD++);
@@ -3995,10 +4140,60 @@ unsigned int dslhal_api_getPMDTestus(tidsl_t * ptidsl, CoPMDTestParams_t * co_pm
   co_pmdtest_params_p->co_attndr = dslhal_support_byteSwap32(co_pmdtest_params_p->co_attndr);
   co_pmdtest_params_p->co_near_actatp = dslhal_support_byteSwap16(co_pmdtest_params_p->co_near_actatp);
   co_pmdtest_params_p->co_far_actatp = dslhal_support_byteSwap16(co_pmdtest_params_p->co_far_actatp);
+  //UR8_MERGE_START CQ11709 Tim
+  co_pmdtest_params_p->usHLOGMT = dslhal_support_byteSwap16(co_pmdtest_params_p->usHLOGMT);
+  co_pmdtest_params_p->usSNRMT = dslhal_support_byteSwap16(co_pmdtest_params_p->usSNRMT);
+  co_pmdtest_params_p->usQLNMT = dslhal_support_byteSwap16(co_pmdtest_params_p->usQLNMT);
+  //UR8_MERGE_END CQ11709 Tim
   #endif
+  //UR8_MERGE_START_END CQ11803 Ram
+  co_pmdtest_params_p->co_attndr += dslhal_api_deltaUSMaxAttainableNDR(ptidsl);
   return DSLHAL_ERROR_NO_ERRORS;
 }
 #endif
+
+//  UR8_MERGE_START CQ11803   Ram
+/********************************************************************************************
+* FUNCTION NAME: dslhal_api_deltaUSMaxAttainableNDR
+*
+*********************************************************************************************
+* DESCRIPTION: Compute Changes to estimated Upstream Max Attainable Net Data Rate
+* Input:  PITIDSLHW_T *ptidsl,
+* Return: Estimated delta to initial US Max Attainable NDR Estimate
+*
+********************************************************************************************/
+#ifndef NO_ADV_STATS
+int dslhal_api_deltaUSMaxAttainableNDR(tidsl_t * ptidsl)
+{
+  signed int deltaUSMaxAttNDR=0;
+  unsigned int offset[] = {7,3}, rc=0, i=1, usNumLoadedTones =0, usTargetMargin=0;
+
+  rc += dslhal_api_dspInterfaceRead(ptidsl,
+                                    (unsigned int) ptidsl->pmainAddr,
+                                    2,
+                                    (unsigned int *) &offset,
+                                    (unsigned char*) &usTargetMargin,
+                                    NUM_BYTES_PER_INT);
+  if(rc)
+    return DSLHAL_ERROR_BLOCK_READ;
+  usTargetMargin &= dslhal_support_byteSwap32(0xffff);
+  usTargetMargin = dslhal_support_byteSwap32(usTargetMargin);
+  for(i=1;i<ptidsl->AppData.max_us_tones;i++){
+      if((ptidsl->AppData.cBng[(i-1)*2])&0xf)
+         usNumLoadedTones++;
+       }
+  if(dslhal_api_getHighPrecision() == 1){
+    usTargetMargin *=10;
+    deltaUSMaxAttNDR = (ptidsl->AppData.usMargin - usTargetMargin)*usNumLoadedTones*133;
+  }
+  else
+    deltaUSMaxAttNDR = (ptidsl->AppData.usMargin - usTargetMargin)*usNumLoadedTones*1333;
+  dgprintf(5,"US ATT NDR Delta:%d\n",deltaUSMaxAttNDR);
+  return deltaUSMaxAttNDR;
+}
+#endif
+//  UR8_MERGE_END CQ11803   Ram
+
 // UR8_MERGE_END CQ11057 KCCHEN
 /********************************************************************************************
 * FUNCTION NAME: dslhal_api_getQLNpsds()
@@ -4084,9 +4279,8 @@ unsigned int dslhal_api_getSNRpsds(tidsl_t * ptidsl, unsigned char *outbuf, int 
   if (flag!=1)
     return DSLHAL_ERROR_INVALID_PARAM;
 
-  // Must be ADSL2/2+ mode
-  if (!(ptidsl->AppData.TrainedMode & (ADSL2PLUS_MASKS|ADSL2_MASKS)) )
-    return DSLHAL_ERROR_UNSUPPORTED_MODE;
+  //UR8_MERGE_START_END CQ11579 Tim
+  //CQ11579: Allow SNR reads in ADSL1 mode
 
   // currently only training HLOGpsds is supported
   // The HLOG internal buffer is in external SDRAM.
@@ -4276,13 +4470,13 @@ static short dslhal_staticapi_getHlog(tidsl_t *ptidsl,unsigned int index)
 unsigned int dslhal_api_setPhyFeatureController(tidsl_t * ptidsl, unsigned int paramId, unsigned int phyCtrlWord)
 {
   //UR8_MERGE_START CQ11341 Ram
-  unsigned int offset[] = {35,0,0}, currentControlWord=0, rc=0; 
+  unsigned int offset[] = {35,0,0}, currentControlWord=0, rc=0;
   // This change mirrors the changes in DSP Host Interface, which now has a single
   // 32-bit API bit control field to turn-on/off API bits, hence getting rid of the
   // redundant second field, which was not being used as per the originally intended
   // design to allow a field to toggle host or dsp control for each feature and another
   // bit field to turn the corresponding feature on or off.
-    
+
   // This change makes this API function exactly identical to the API function below
   // dslhal_api_enableDisablePhyFeatures. This is required to maintain consistency in
   // customer API calls.
@@ -4414,9 +4608,9 @@ unsigned int dslhal_api_readPhyFeatureSettings(tidsl_t * ptidsl, unsigned int pa
 
   pPhySetting->phyEnableDisableWord = dslhal_support_byteSwap32(currentFeatureSet);
   // UR8_MERGE_START CQ11341 Ram
-  // Since the dev_host_interface.h structure has been changed to remove phyControl, 
+  // Since the dev_host_interface.h structure has been changed to remove phyControl,
   // to keep the impact to Application layer API calls, this value which corresponds
-  // to the removed element in the host interface is being maintained and set equal 
+  // to the removed element in the host interface is being maintained and set equal
   // to phyEnableDisableWord for transparency.
   pPhySetting->phyControlWord = dslhal_support_byteSwap32(currentFeatureSet);
 /*
@@ -4555,8 +4749,8 @@ void dslhal_api_redirectMode(tidsl_t *ptidsl, unsigned char mode)
 }
 
 
-
-
+//UR8_MERGE_START CQ11813 Hao-Ting
+#ifndef LINUX_CLI_SUPPORT
 /********************************************************************************************
 * FUNCTION NAME: dslhal_api_redirectPrint() (CQ:10242)
 *
@@ -4620,6 +4814,8 @@ void dslhal_api_redirectPrint(tidsl_t *ptidsl)
    }
 }
 
+#endif //end of #ifndef LINUX_CLI_SUPPORT
+//UR8_MERGE_END CQ11813 Hao-Ting
 
 //UR8_MERGE_START GERALD_CQ_REDIRECT_BUGFIX2_20060328 Gerald
 /********************************************************************************************
@@ -4648,6 +4844,13 @@ void dslhal_api_redirectFree(tidsl_t *ptidsl)
                               sizeof(DEV_HOST_Cli2lctl_t));
 
     dprintf(5, "dslhal_api_redirectFree()\n");
+
+//UR8_MERGE_START CQ11813 Hao-Ting
+#ifdef LINUX_CLI_SUPPORT
+    ptidsl->AppData.p_cliBuffAddr = (unsigned char *)PHYS_TO_K0((UINT32)(ptidsl->AppData.p_cliBuffAddr));
+#endif
+//UR8_MERGE_END CQ11813 Hao-Ting
+
     shim_osFreeDmaMemory(ptidsl->AppData.p_cliBuffAddr,
                          ptidsl->AppData.cliBuffsize + 2*sizeof(UINT32));
 }

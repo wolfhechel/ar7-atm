@@ -95,9 +95,13 @@
 * UR8_MERGE_START L2PM Tim
 *  08/31/06  Tim Bornemisza  CQ10756: Added bit to turn off L2PM processing
 * UR8_MERGE_END L2PM Tim
-// UR8_MERGE_START CQ11057 KCCHEN
-// 10/12/06 Kuan-Chen Chen   CQ11057: Request US PMD test parameters from CO side
-// UR8_MERGE_END CQ11057 KCCHEN
+* UR8_MERGE_START CQ11057 KCCHEN
+* 10/12/06 Kuan-Chen Chen   CQ11057: Request US PMD test parameters from CO side
+* UR8_MERGE_END CQ11057 KCCHEN
+* UR8_MERGE_START_END new_bitswap MB
+*  05/22/07  Mark Bryan      CQ11999: Added sendSraRequest and sendBswpRequest to structure DEV_HOST_aocVarDef_t
+* UR8_MERGE_START CQ11922 Tim
+*  09/04/07  Tim Bornemisza  CQ11922: Added support for PTM
 *  (C) Copyright Texas Instruments Inc. 2002.  All rights reserved.
 *******************************************************************************/
 
@@ -170,7 +174,14 @@ typedef struct
   UINT8           usBitSwapReqFlag;      // flag gets set to bitswap or ext bitswap when mse table indicates bitswap is necessary
   UINT8           dsBitSwapReqFlag;      // flag gets set after bitswap request message received
   UINT8           aocReset;              // this flag will indicate a retrain took place
-  UINT8           dummy[3];              // dummy bytes for 32-bit alignment
+  // UR8_MERGE_START new_bitswap MB
+  // UR8_MERGE_START SRA Tim Bornemisza
+  //CQ10351: Flag to indicate to OLR function that it should do an SRA
+  UINT8           sendSraRequest;        //flag to begin a SRA in ADSL2/2+
+  // UR8_MERGE_END SRA Tim Bornemisza    
+  UINT8           sendBswpRequest;       //flag to begin a bitswap in ADSL2/2+ //CQ11199
+  UINT8           dummy;                 // dummy bytes for 32-bit alignment
+  // UR8_MERGE_END new_bitswap
 } DEV_HOST_aocVarDef_t;
 
 
@@ -307,6 +318,10 @@ typedef struct
   // UR8_MERGE_START CQ11057 KCCHEN
   DEV_HOST_BIS_PMD_TEST_PARAMETERS_FROM_CO_Def_t*          BisPmdTestParametersUS_p;
   // UR8_MERGE_END CQ11057 KCCHEN
+  //UR8_MERGE_START CQ11922 Tim
+  UINT32          rx_efm_stateAddr;     //Address of EFM rx state
+  UINT32          tx_efm_stateAddr;     //Address of EFM tx state 
+  //UR8_MERGE_EFM CQ11922 Tim
 } DEV_HOST_modemEnv_t;
 
 // bit definition for ovhdControl

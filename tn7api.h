@@ -15,7 +15,7 @@
  *                     and for code size reduction.
  *    11/03/05  CPH    Add ClearEoc ACK.
  *    01/25/06  JZ     CQ: 10273 Aztech/Singtel oam pvc management issue, new PDSP 0.54
- *    01/25/06  JZ     CQ: 10275 Add Remote Data Log code. Search ADV_DIAG_STATS in ATM  
+ *    01/25/06  JZ     CQ: 10275 Add Remote Data Log code. Search ADV_DIAG_STATS in ATM
  *                     driver code and manually turn on it for enabling the feature
  *    UR8_MERGE_START CQ10682   Jack Zhang
  *    6/15/06  JZ   CQ10682: Display ADSL training messages in ATM driver proc file system
@@ -26,6 +26,11 @@
  *    UR8_MERGE_START CQ11057   Jack Zhang
  *    11/03/06 JZ     CQ11057: Request US PMD test parameters from CO side
  *    UR8_MERGE_END   CQ11057*
+ *    UR8_MERGE_START CQ11813 Hao-Ting
+ *    08/06/07 Hao-Ting CQ11813 CLI redirect support in Linux
+ *                              Define functions for /proc entry to read and init CLI redirect
+ *    UR8_MERGE_END   CQ11813
+ *    09/18/07  CPH   CQ11466   Added EFM Support
  ************************************************************************************/
 
 #ifndef __SAPI_H
@@ -107,6 +112,12 @@ int tn7dsl_proc_dbg_rmsgs4(char* buf, char **start, off_t offset, int count,int 
 
 int tn7dsl_proc_write_stats(struct file *fp, const char * buf, unsigned long count, void * data);
 int tn7dsl_proc_modem(char* buf, char **start, off_t offset, int count,int *eof, void *data);
+//UR8_MERGE_START CQ11813 Hao-Ting
+#ifdef LINUX_CLI_SUPPORT
+int tn7dsl_proc_dbgmsg_write(struct file *fp, const char *buf, unsigned long count, void *data);
+int tn7dsl_proc_dbgmsg_read(char* buf, char **start, off_t offset, int count,int *eof, void *data);
+#endif
+//UR8_MERGE_END CQ11813
 inline int tn7dsl_handle_interrupt(void);
 
 void tn7dsl_dslmod_sysctl_register(void);
@@ -126,6 +137,10 @@ unsigned int tn7dsl_get_memory(unsigned int addr_in);
 
 int os_atoi(const char *pStr);
 int os_atoh(const char *pStr);
+#ifdef AR7_EFM
+int os_atoih(const char *pStr);
+#endif
+
 unsigned long os_atoul(const char *pStr);
 int tn7dsl_proc_snr0(char* buf, char **start, off_t offset, int count, int *eof, void *data);
 int tn7dsl_proc_snr1(char* buf, char **start, off_t offset, int count, int *eof, void *data);
@@ -169,6 +184,9 @@ int tn7sar_get_near_end_loopback_count(unsigned int *pF4count, unsigned int *pF5
 int tn7sar_oam_generation(void *privContext, int chan, int type, int vpi, int vci, int timeout);
 int tn7sar_get_stats(void *priv1);
 int tn7sar_proc_sar_stat(char* buf, char **start, off_t offset, int count,int *eof, void *data);
+#ifdef AR7_EFM
+void tn7sar_get_EFM_firmware_version(unsigned int *pdsp_version_ms, unsigned int *pdsp_version_ls);
+#endif
 void tn7sar_get_sar_firmware_version(unsigned int *pdsp_version_ms, unsigned int *pdsp_version_ls);
 int tn7sar_proc_oam_ping(char* buf, char **start, off_t offset, int count,int *eof, void *data);
 int tn7sar_proc_pvc_table(char* buf, char **start, off_t offset, int count,int *eof, void *data);

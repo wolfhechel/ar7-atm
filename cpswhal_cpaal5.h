@@ -14,7 +14,8 @@
  *      06Mar02   Greg      1.01   Documentation enhanced
  *      18Jul02   Greg      1.02   Many updates (OAM additions, general reorg)
  *      22Nov02   Mick      RC2    Additions from Denis' input on Control
- *
+ *      18Sept07  CPH       2.0    Added EFM Support
+ * 
  *  author  Greg Guyotte
  *  version 1.02
  *  date    18-Jul-2002
@@ -409,6 +410,11 @@ typedef struct
   void (*OamLoopbackConfig)   (HAL_DEVICE *HalDev, unsigned int OamConfig, unsigned int *LLID, unsigned int CorrelationTag);
   volatile bit32u* (*RegAccess)(HAL_DEVICE *HalDev, bit32u RegOffset);
   STAT_INFO*  (*StatsGetOld)(HAL_DEVICE *HalDev);
+#endif
+
+#ifdef AR7_EFM
+  int  (*SetEFMmode)(HAL_DEVICE *HalDev, int Mode);
+  int  (*SetOSDev)(HAL_DEVICE *HalDev, OS_DEVICE *Os_Dev);
 #endif
   } HAL_FUNCTIONS;
 

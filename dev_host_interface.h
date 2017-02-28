@@ -420,6 +420,27 @@
 *  02/26/07   Tim           CQ11516: Added two new code pages
 * UR8_MERGE_START_END CQ11260 WT100_CTLM_B900 HL
 *  01/15/07 Hanyu    CQ11260: Added API bit2,3 in IOP FEATURE list1 for CTLM B900 O2 fix.
+* UR8_MERGE_START_END CQ11544 Tim
+*  04/16/07 Tim      CQ11544: Added support for uncancelled echo measurement and got rid of an unused array 
+* UR8_MERGE_START_END CQ11709 Tim
+*  05/01/07  Tim    CQ11709: Added support for AT&T prioirty 1 statistics 
+* UR8_MERGE_START_END CQ11803 KCCHEN/Ram
+*  06/12/07  Ram    CQ11803: Added new API bit for US ATTNDR Update Fix
+*  UR8_MERGE_START_END monitored_tones MB
+*  05/25/2007 Mark Bryan   CQ11745: Added DISABLE_MONITORED_TONES API bit.
+* UR8_MERGE_START_END CQ11781 HAO
+*  06/11/07 Hao Zhou  CQ11781: Added one bit for ADSL1 and another for ADSL2+ in the two-tone timing algorithm
+* UR8_MERGE_START_END CQ11724 Ram
+*  06/11/07 Ram     CQ11724: New PHY_0 API bit 23 for CPE initiated DELT.
+*                              ENABLE_CPE_INITIATED_DELT
+* UR8_MERGE_START_END CQ11818 Ram
+*  06/11/07 Ram     CQ11818: Added a new API bit for TDC fixes.
+// UR8_MERGE_START_START_END CQ11661 HL
+// 06/19/07 Hanyu    CQ11661: Added IOP1 API bit6.
+* UR8_MERGE_START_END CQ11931 Ram
+*  09/11/07 Ram      CQ11931: Added IOP1 API bit9 for unconditionally enabling Monitored Tones
+* UR8_MERGE_START_END CQ11922 Tim
+*  09/04/07 Tim      CQ11922: Added support for PTM mode
 * (C) Copyright Texas Instruments Inc. 2002.  All rights reserved.
 *******************************************************************************/
 
@@ -516,6 +537,18 @@ enum
 // These DSP-to-Host responses are organized into two groups:
 // responses to commands and requests for OAM services.
 
+//UR8_MERGE_START CQ11922 Tim
+// Send with DSP_GHS_TCMODE in parameter 0 to host.
+#ifndef TC_MODE
+#define TC_MODE
+enum {
+  TC_MODE_STM,
+  TC_MODE_ATM,
+  TC_MODE_PTM // EFM mode
+};
+#endif
+//UR8_MERGE_END CQ11922 Tim
+
 enum
 {
   DSP_IDLE,               // R_IDLE state entered
@@ -558,8 +591,10 @@ enum
   DSP_LOF,                // DSP Message to indicate an LOF alarm is being set or cleared
   DSP_SRA,                 // Downstream SRA complete - FOR INTERNAL USE ONLY
   //UR8_MERGE_START_END CQ11446 Nima
-  DSP_BROWNOUT            // DSP message to host to indicate die gasp has ended
+  DSP_BROWNOUT,            // DSP message to host to indicate die gasp has ended
   // UR8_MERGE_END SRA Tim Bornemisza
+  //UR8_MERGE_START_END CQ11922 Tim
+  DSP_GHS_TCMODE          // DSP Message during GHS to indicate intend to use ATM (pat0=0) or EFM (par0=1) mode.
 };
 
 // Definitions used to indicate which modes are allowed by HAL. The datapump looks at
@@ -684,6 +719,8 @@ enum
   DISABLE_RANDOM_TONE_ORDER     =  BIT3,
   ENABLE_2TONE_GHS_DETECTION   =  BIT4,
   ENABLE_CAPPED_RATE_SUPPORT   =  BIT5,
+//UR8_MERGE_START_END monitored_tones MB
+  DISABLE_MONITORED_TONES   =  BIT6, //CQ11745 
   DISABLE_EXTENDED_FRAMING_SUPPORT = BIT7,    // CQ10004
   ENABLE_EXTENDED_INP_SUPPORT      = BIT8,    // CQ10222
 // UR8_MERGE_START API-Bits PeterHou
@@ -716,6 +753,19 @@ enum
 // UR8_MERGE_START_END CQ11467 ANNEX_I_GHS  HL
   ENABLE_ANNEXI_SUPPORT = BIT21,
   // UR8_MERGE_START CQ11004 Nima
+//UR8_MERGE_START_END CQ11544 Tim  
+  ENABLE_UNCANCELLED_ECHO_METRIC = BIT22,
+  //UR8_MERGE_START_END CQ11724 Ram  
+  ENABLE_CPE_INITIATED_DELT = BIT23,
+// UR8_MERGE_START CQ11781 HAO  
+  ENABLE_TWOTONE_ADSL1_TIMING = BIT24,    //CQ11781 HAO
+  DISABLE_TWOTONE_A2PLUS_TIMING = BIT25,  //CQ11781 HAO
+  //UR8_MERGE_START CQ11922 Tim
+  ENABLE_PTM_PREFERED = BIT26,            //CQ11922 Tim
+  ENABLE_FORCE_PTM = BIT27,              //CQ11922 Tim
+  //UR8_MERGE_END CQ11922 Tim
+  RESERVED_API3 = BIT28,              //CQ11781 HAO   reserved for UR8
+// UR8_MERGE_END CQ11781 HAO  
   // UR8_MERGE_START_END Renamed ENABLE_PHY_TI_INTERNAL2 to DISABLE_PHY_TI_INTERNAL2
   DISABLE_PHY_TI_INTERNAL2    = BIT29,    //CQ11004
 // UR8_MERGE_END CQ11004
@@ -793,7 +843,12 @@ enum{
    ENABLE_FORCED_US_PCB_14DB_NULLLOOP       = BIT3,
    // UR8_MERGE_START_END CQ11425 KCCHEN
    ENABLE_CNXT_PMD_FIX                      = BIT4,
-   ENABLE_BRITISH_TELECOM_FIX               = BIT5 //UR8_MERGE_START_END CQ11307 Ram
+   ENABLE_BRITISH_TELECOM_FIX               = BIT5, //UR8_MERGE_START_END CQ11307 Ram
+   // UR8_MERGE_START_START_END CQ11661 HL
+   ENABLE_ADSL2PLUS_FASTPATH_STABILITY      = BIT6,
+   ENABLE_TDC_FIX                           = BIT7, //UR8_MERGE_START_END CQ11818 Ram
+   ENABLE_USATTNDR_UPDATE_FIX               = BIT8,  //UR8_MERGE_START_END CQ11803 KCCHEN/Ram 
+   ENABLE_FORCED_MONITORED_TONES            = BIT9  //UR8_MERGE_START_END CQ11931 Ram
 };
 
 //UR8_MERGE_START_CQ11341 AdeelJ
@@ -956,7 +1011,8 @@ typedef struct
 typedef struct
 {
   UINT8  trainMode;          // Train mode selected.  See training modes defined above.
-  UINT8  bDummy1;            // dummy byte for explicit 32-bit alignment
+  //UR8_MERGE_START_END CQ11922 Tim
+  UINT8  TCMode;            // ATM or PTM mode selected
   UINT16 lineLength;         // Contains loop length estimate.  Accuracy w/i 500 ft.  LSbit = 1 for straight loop, = 0 for bridge tap
   UINT32 atucVendorId;       // Pass the vendor id of the CO to the host
   UINT8  cMsgs1[MAX_CMSGPCB2_LENGTH];    // Array is used for both cMsgs1 & cMsg-PCB
@@ -1024,7 +1080,8 @@ typedef struct
   UINT8   usCrcRetrain;         // flag to disable retrain due to excessive USCRC
   UINT8   t1413VendorId[2];     // Vendor ID used for T1.413 trainings
   UINT8   gdmtVendorId[8];      // Vendor ID used for G.dmt trainings (ITU VendorID)
-  UINT8   missingTones[64];     // 64 element array to define missing tones for TX_MEDLEY and TX REVERB tests
+//UR8_MERGE_START_END CQ11544 Tim
+//CQ11544: missingTones[64] was unused and therefore removed  
   UINT32  missingToneDsAddr;    // Address given to DSP for tones to be switched off in DS direction
   UINT8   dsToneTurnoff_f;      // This flag controls the DS tone turn off logic
   UINT8   mhzFlag;              // Indicates whether DSP runs at 200 v/s 250 Mhz
@@ -1197,8 +1254,15 @@ typedef struct
   SINT32                usACTPSD;    // Upstream actual power spectral density.
   SINT32                dsHLINSC;    // Downstream linear representation scale.
   PUINT32               dsHLINps_p;  // Downstream linear channel characteristics per subcarrier.
+  //UR8_MERGE_START CQ11709 Tim
+  UINT16                dsHlogMT;    //Downstream Hlog measurement time
+  UINT16                dsSNRMT;     //Downstream SNR measurement time 
+  UINT16                dsQLNMT;     //Downstream QLN measurement time
+  //UR8_MERGE_END CQ11709 Tim
 //  UR8_MERGE_END   CQ10979*
 //  UR8_MERGE_START CQ10978   Jack Zhang
+//UR8_MERGE_START CQ11544 Tim  
+  UINT16                uncancelledEcho;
   UINT8                 pwrStatus;   // DSL Power Management Status.
   UINT8                 pad[3];      // pading to 32 bits.
 //  UR8_MERGE_END   CQ10978*
@@ -1355,6 +1419,8 @@ typedef struct
   UINT32                        * dspScratchMem_p1;                     // base address of DSP scratch memory
   UINT32                        * dspScratchMem_p2;                     // base address of DSP scratch memory
   UINT32                        * dspScratchMem_p3;                     // base address of DSP scratch memory
+  //UR8_MERGE_START_END CQ11922 Tim
+  UINT32                        * dspScratchMem_p4;                     // base address of DSP scratch memory
 } DEV_HOST_profileBase_t ;
 
 
@@ -1816,11 +1882,17 @@ typedef struct {
   unsigned char TestParmCOSNRfMsg[MAX_US_TONES];
   UINT16 co_latn;
   UINT16 co_satn;
+  UINT32 co_attndr;
   signed short usMargin;                  // DSP Write, measured US margin
   signed short dummy;
-  UINT32 co_attndr;
   signed short co_near_actatp;
   signed short co_far_actatp;
+  //UR8_MERGE_START CQ11709 Tim
+  UINT16 usHLOGMT;  //upstream Hlog measurment time
+  UINT16 usSNRMT;   //upstream SNR measurment time
+  UINT16 usQLNMT;   //upstream QLN measurment time
+  UINT16 dummy2;
+  //UR8_MERGE_END CQ11709 Tim
 }DEV_HOST_BIS_PMD_TEST_PARAMETERS_FROM_CO_Def_t;
 // UR8_MERGE_END CQ11057 KCCHEN
 

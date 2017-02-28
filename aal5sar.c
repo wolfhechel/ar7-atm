@@ -12,6 +12,7 @@
  *      06May02 Greg       1.02  AAL2 added
  *      06Jun02 Greg       1.03  Multiple API and bug fixes from emulation
  *      12Jul02 Greg       1.04  API Update
+ *      18Sept07 CPH       2.00  CQ11466: Added EFM support
  */
 
 /**
@@ -539,6 +540,10 @@ typedef struct hal_private HAL_PRIVATE;
 typedef struct hal_private HAL_RECEIVEINFO;
 
 /* include CPHAL header files here */
+#ifdef AR7_EFM
+#include "tn7efm.h"
+#endif
+
 #include "cpcommon_cpaal5.h"
 #include "cpswhal_cpaal5.h"
 #include "aal5sar.h"
@@ -587,6 +592,181 @@ these masks are for the mode parameter used in halSend/OsReceive
 #define AIS_ETOE_SHIFT  17         /* +01.02.00 */
 #define RDI_CNT_MASK    0xffff0000 /* +01.02.00 */
 #define RDI_CNT_SHIFT   16         /* +01.02.00 */
+
+#ifdef AR7_EFM
+extern int g_efm_proc_ctl;
+#endif
+
+#ifdef EFM_DEBUG
+//extern int  sprintf ( char * buffer, const char * format, ...);
+
+int disp_TCB_Queue_detail(char *buf, int count, int chan, HAL_DEVICE *pSarHalDev, int Queue)
+{
+  int len = 0;
+  int limit = count - 80;
+  HAL_TCB *pTcbPool;
+  extern int disp_Hal_Device (char *buf, int count, CPSAR_DEVICE *pSarHalDev);
+
+if (len <= limit)
+  len += sprintf (buf + len,"pTcbStart=%08x\n", (unsigned int) pSarHalDev->TcbStart[chan][Queue]);
+if (len <= limit)
+  len += sprintf(buf + len,"TxActQueueCount=%d\n", pSarHalDev->TxActQueueCount[chan][Queue]);
+  pTcbPool = pSarHalDev->TcbPool[chan][Queue];
+if (len <= limit)
+  len += sprintf(buf + len,"pTcbPool=%08x", (unsigned int) pTcbPool);
+
+  while (pTcbPool != NULL)
+  {
+    pTcbPool = pTcbPool->Next;
+    if (len <= limit)
+      len += sprintf(buf + len,"->%08x", (unsigned int) pTcbPool);
+  }
+
+  if (len <= limit)
+    len+= sprintf(buf + len,"\nTxActQueueHead=%08x\n", (unsigned int) pSarHalDev->TxActQueueHead[chan][Queue]);
+  if (len <= limit)
+    len+= sprintf(buf + len,"TxActQueueTail=%08x\n", (unsigned int) pSarHalDev->TxActQueueTail[chan][Queue]);
+  if (len <= limit)
+    len+= sprintf(buf + len,"TxActive=%d\n", pSarHalDev->TxActive[chan][Queue]);
+
+
+  if (len <= limit)
+  len += sprintf (buf + len,"SarFrequency=%d\n", pSarHalDev->SarFrequency);
+
+
+  if (len <= limit)
+  {
+    len += sprintf (buf + len, "SarDev=%08x\n", pSarHalDev->SarDev);
+    len += disp_Hal_Device( buf+len, count, pSarHalDev->SarDev);
+  }
+
+  return len;
+}
+
+int disp_TCB_Queue(char *buf, int count, int chan, HAL_DEVICE *pSarHalDev, int Queue)
+{
+  int len = 0;
+  int limit = count - 80;
+
+  if (len <= limit)
+    len+= sprintf(buf + len, "%2d.%d %08x  %08x %08x  %08x %08x %08x\n", chan, Queue,
+    (unsigned int) pSarHalDev->TcbStart[chan][Queue],
+    pSarHalDev->TxActQueueCount[chan][Queue],
+    (unsigned int) pSarHalDev->TcbPool[chan][Queue],
+    (unsigned int) pSarHalDev->TxActQueueHead[chan][Queue],
+    (unsigned int) pSarHalDev->TxActQueueTail[chan][Queue],
+    (unsigned int) pSarHalDev->TxActive[chan][Queue]);
+  return len;
+}
+
+int disp_TCB_detail(char *buf, int count, void *Tcb_addr)
+{
+  int len = 0;
+  int limit = count - 80;
+  HAL_TCB *pTcb= (HAL_TCB *) Tcb_addr;
+
+  if (len <= limit)
+    len+= sprintf(buf + len, "pTcb=%08x, sizeof(HAL_TCB)=%d (%02x)\n", (unsigned int) pTcb, sizeof(HAL_TCB), sizeof(HAL_TCB));
+  if (len <= limit)
+    len+= sprintf(buf + len, "  HNext=%08x\n", pTcb->HNext);
+  if (len <= limit)
+    len+= sprintf(buf + len, "  BufPtr=%08x\n", pTcb->BufPtr);
+  if (len <= limit)
+    len+= sprintf(buf + len, "  Off_BLen=%08x\n", pTcb->Off_BLen);
+  if (len <= limit)
+    len+= sprintf(buf + len, "  mode=%08x\n", pTcb->mode);
+  if (len <= limit)
+    len+= sprintf(buf + len, "  AtmHeader=%08x\n", pTcb->AtmHeader);
+  if (len <= limit)
+    len+= sprintf(buf + len, "  Word5=%08x\n", pTcb->Word5);
+  if (len <= limit)
+    len+= sprintf(buf + len, "  Res6=%08x\n", pTcb->Res6);
+  if (len <= limit)
+    len+= sprintf(buf + len, "  Res7=%08x\n", pTcb->Res7);
+  if (len <= limit)
+    len+= sprintf(buf + len, "  Next=%08x\n", (unsigned int) pTcb->Next);
+  if (len <= limit)
+    len+= sprintf(buf + len, "  OsInfo=%08x\n", (unsigned int) pTcb->OsInfo);
+  if (len <= limit)
+    len+= sprintf(buf + len, "  Eop=%08x\n", (unsigned int) pTcb->Eop);
+
+  return len;
+}
+
+int disp_chan_detail(char *buf, int count, int chan,  HAL_DEVICE *pSarHalDev)
+{
+  int len = 0;
+  int limit = count - 80;
+  CHANNEL_INFO *pch;
+
+  pch = &pSarHalDev->ChData[chan];
+
+  if (len <= limit)
+    len+= sprintf (buf+len, "chan%d\n", chan);
+
+  if (len<= limit)
+    len+= sprintf (buf+len, "RxBufSize=%d, RxBufferOffset=%d, RxNumBuffers=%d, RxServiceMax=%d\n",
+      pch->RxBufSize, pch->RxBufferOffset, pch->RxNumBuffers, pch->RxServiceMax);
+
+
+  if (len<= limit)
+    len+= sprintf (buf+len, "TxNumBuffers=%d, TxNumQueues=%d, TxServiceMax=%d\n",
+      pch->TxNumBuffers, pch->TxNumQueues, pch->TxServiceMax);
+
+  return len;
+}
+
+int disp_RCB_Queue_detail(char *buf, int count, int chan, HAL_DEVICE *pSarHalDev)
+{
+  int len = 0;
+  int limit = count - 80;
+  HAL_RCB *pRcbPool, *pRcbActQueue;
+
+  if (len<= limit)
+    len+= sprintf (buf + len, "pRcbStart=%08x\n", (unsigned int) pSarHalDev->RcbStart[chan]);
+
+  if (len<= limit)
+    len+= sprintf (buf + len, "RxActQueueCount=%d\n", pSarHalDev->RxActQueueCount[chan]);
+
+  pRcbPool = pSarHalDev->RcbPool[chan];
+
+  if (len<= limit)
+    len+=  sprintf (buf + len, "pRcbPool=%08x", (unsigned int) pRcbPool);
+
+  while (pRcbPool != NULL)
+  {
+    pRcbPool = pRcbPool->Next;
+    len += sprintf (buf + len, "->%08x", (unsigned int) pRcbPool);
+  }
+
+  if (len<=limit)
+    len+= sprintf(buf+len, "\n");
+
+  if (len<=limit)
+    len+= sprintf(buf+len, "RxActQueueHead=%08x", (unsigned int) pSarHalDev->RxActQueueHead[chan]);
+
+  pRcbActQueue= pSarHalDev->RxActQueueHead[chan];
+  while (pRcbActQueue != NULL)
+  {
+    pRcbActQueue = pRcbActQueue->Next;
+    if (len<=limit)
+      len+= sprintf(buf+len, "->%08x", (unsigned int) pRcbActQueue);
+  }
+
+  if (len<= limit)
+      len+= sprintf(buf+len,"\n");
+
+  if (len<= limit)
+      len+= sprintf(buf+len, "RxActQueueTail=%08x\n", (unsigned int) pSarHalDev->RxActQueueTail[chan]);
+
+  if (len<= limit)
+      len+= sprintf(buf+len, "RxActive=%d\n", pSarHalDev->RxActive[chan]);
+
+  return len;
+}
+
+#endif
+
 
 /*
  *  This function takes a vpi/vci pair and computes the 4 byte atm header
@@ -637,6 +817,9 @@ static int atmheader(int gfc, int vpi, int vci, int pti, int clp)
 static int StatsClear(HAL_DEVICE *HalDev)
   {
    int i;
+#ifdef AR7_EFM
+   int num_chan = (HalDev->EFM_mode ? NUM_EFM_CHAN : NUM_AAL5_CHAN);
+#endif
 
 #ifdef __CPHAL_DEBUG
    if (DBG(0))
@@ -646,8 +829,12 @@ static int StatsClear(HAL_DEVICE *HalDev)
      }
 #endif
 
+#ifdef AR7_EFM
+   for (i=0; i<num_chan; i++)
+#else
    /* clear stats */
    for (i=0; i<NUM_AAL5_CHAN; i++)
+#endif
      {
       HalDev->Stats.CrcErrors[i]=0;
       HalDev->Stats.LenErrors[i]=0;
@@ -766,6 +953,20 @@ static int ChannelConfigGet(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
                 (bit32u)HalChn);
       osfuncSioFlush();
      }
+#endif
+
+#ifdef AR7_EFM
+  if (HalDev->EFM_mode)
+  {
+    HalDev->ChData[Ch].TxNumBuffers = 32;
+    HalDev->ChData[Ch].TxNumQueues = 2;
+    HalDev->ChData[Ch].TxServiceMax = 32;
+    HalDev->ChData[Ch].RxNumBuffers = 16;
+    HalDev->ChData[Ch].RxBufferOffset = 0;
+    HalDev->ChData[Ch].RxBufSize = 1582;
+    HalDev->ChData[Ch].RxServiceMax = 16;
+    return EC_NO_ERRORS;
+  }
 #endif
 
    Ret=OsFunc->DeviceFindParmValue(HalDev->DeviceInfo, channel_names[Ch], &ChInfo);
@@ -908,9 +1109,16 @@ static int ChannelConfigApply(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
    /* Initialize Tx State RAM (Nothing to do) */
 
    /* Initialize Rx State RAM */
+#ifdef AR7_EFM
+  if (!HalDev->EFM_mode)
+  {  // following for ATM mdoe only
+#endif
    /* Configure the Rx buffer offset */
    pTmp=(pRX_DMA_STATE_WORD_0(HalDev->dev_base) + (Ch*64));
    *pTmp |= (HalDev->ChData[Ch].RxBufferOffset & 0xFF);
+#ifdef AR7_EFM
+  }
+#endif
 
    /* Initialize buffer memory for the channel */
    Ret = InitTcb(HalDev, Ch);
@@ -962,6 +1170,26 @@ static void ChannelConfigInit(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
    HalDev->ChData[Ch].RxBufSize      = cfg_rx_buf_size[Ch];
    HalDev->ChData[Ch].RxBufferOffset = cfg_rx_buf_offset[Ch];
    HalDev->ChData[Ch].TxNumQueues    = cfg_tx_num_queues[Ch];
+#ifdef AR7_EFM
+   if (HalDev->EFM_mode)
+    {
+    HalDev->ChData[Ch].CpcsUU         = 0;
+    HalDev->ChData[Ch].DaMask         = 0;
+    HalDev->ChData[Ch].Priority       = 0;
+    HalDev->ChData[Ch].PktType        = 0;
+    HalDev->ChData[Ch].Vci            = 0;
+    HalDev->ChData[Ch].Vpi            = 0;
+    HalDev->ChData[Ch].TxVc_CellRate  = 0;
+    HalDev->ChData[Ch].TxVc_QosType   = 0;
+    HalDev->ChData[Ch].TxVc_Mbs       = 0;
+    HalDev->ChData[Ch].TxVc_Pcr       = 0;
+    HalDev->ChData[Ch].Gfc            = 0;
+    HalDev->ChData[Ch].Clp            = 0;
+    HalDev->ChData[Ch].Pti            = 0;
+    }
+    else
+    {
+#endif
    HalDev->ChData[Ch].CpcsUU         = cfg_cpcs_uu[Ch];
    HalDev->ChData[Ch].DaMask         = cfg_da_mask[Ch];
    HalDev->ChData[Ch].Priority       = cfg_priority[Ch];
@@ -975,9 +1203,12 @@ static void ChannelConfigInit(HAL_DEVICE *HalDev, CHANNEL_INFO *HalChn)
    HalDev->ChData[Ch].Gfc            = cfg_gfc[Ch];
    HalDev->ChData[Ch].Clp            = cfg_clp[Ch];
    HalDev->ChData[Ch].Pti            = cfg_pti[Ch];
+#ifdef AR7_EFM
+   }
+#endif
    HalDev->ChData[Ch].RxServiceMax   = cfg_rx_max_service[Ch];
    HalDev->ChData[Ch].TxServiceMax   = cfg_tx_max_service[Ch];
-  }
+ }
 
 /*
  * Update per channel data in the HalDev based channel structure.
@@ -1072,6 +1303,7 @@ static int halChannelSetup(HAL_DEVICE *HalDev, CHANNEL_INFO *HalCh, OS_SETUP *Os
   {
   int Ch, Ret;
 
+
 #ifdef __CPHAL_DEBUG
    if (DBG(0))
      {
@@ -1084,6 +1316,7 @@ static int halChannelSetup(HAL_DEVICE *HalDev, CHANNEL_INFO *HalCh, OS_SETUP *Os
   /* Verify proper device state */
   if (HalDev->State < enInitialized)
     return (EC_AAL5|EC_FUNC_CHSETUP|EC_VAL_INVALID_STATE);
+
 
   /* We require the channel structure to be passed, even if it only contains
      the channel number */
@@ -1112,6 +1345,7 @@ static int halChannelSetup(HAL_DEVICE *HalDev, CHANNEL_INFO *HalCh, OS_SETUP *Os
       /* Store OS_SETUP */
       HalDev->ChData[Ch].OsSetup = OsSetup;                                         /* ~GSG 030508 */
 
+#if 1 //cph999
       /* setup HAL default values for this channel first */
       ChannelConfigInit(HalDev, HalCh);
 
@@ -1119,6 +1353,8 @@ static int halChannelSetup(HAL_DEVICE *HalDev, CHANNEL_INFO *HalCh, OS_SETUP *Os
       /* currently ignoring return value, making the choice that it's okay if
          the user does not supply channel configuration in the data store */
       ChannelConfigGet(HalDev, HalCh);
+#endif
+
 
       /* update HalDev with data given in HalCh */
       ChannelConfigUpdate(HalDev, HalCh);
@@ -2049,6 +2285,8 @@ static int halControl(HAL_DEVICE *HalDev, const char *Key, const char *Action, v
 /*
  * Sets up HAL default configuration parameter values.
  */
+#include <linux/kernel.h> //cph99
+
 static void ConfigInit(HAL_DEVICE *HalDev)
   {
 #ifdef __CPHAL_DEBUG
@@ -2085,6 +2323,7 @@ static bit32u ConfigGet(HAL_DEVICE *HalDev)
 
    /* get the configuration parameters common to all modules */
    Ret = ConfigGetCommon(HalDev);
+
    if (Ret) return (EC_AAL5|Ret);
 
    /* get AAL5 specific configuration parameters here */
@@ -2116,6 +2355,9 @@ static int halInit(HAL_DEVICE *HalDev)
   {
   int i;
   bit32u error_code;
+#ifdef AR7_EFM
+  int num_chan = (HalDev->EFM_mode ? NUM_EFM_CHAN : NUM_AAL5_CHAN);
+#endif
 
 #ifdef __CPHAL_DEBUG
   if (DBG(0))
@@ -2152,7 +2394,11 @@ static int halInit(HAL_DEVICE *HalDev)
 
   /* Initialize various HalDev members.  This is probably overkill, since these
      are initialized in ChannelSetup() and HalDev is cleared in InitModule(). */
+#ifdef AR7_EFM
+  for (i=0; i<num_chan; i++)
+#else
   for (i=0; i<NUM_AAL5_CHAN; i++)
+#endif
     {
      HalDev->InRxInt[i]=FALSE;
      HalDev->ChIsOpen[i][DIRECTION_TX] = FALSE;
@@ -2275,6 +2521,125 @@ static int halKick(HAL_DEVICE *HalDev, int Queue)
    return (EC_NO_ERRORS);
   }
 
+#ifdef AR7_EFM
+static int efmDeviceInt(HAL_DEVICE *HalDev, int *MoreWork)
+  {
+    /*static int NextRxCh=0;
+      static int NextTxCh[2]={0,0};*/
+extern EFM_STATS efm_stats;      
+   int tmp, Ch, FirstCh, WorkFlag;
+   int NextTxHCh, NextRxCh;
+   bit32u rc;
+
+	efm_stats.DevInt_count++;
+
+#ifdef __CPHAL_DEBUG
+   if (DBG(0))
+     {
+      dbgPrintf("[aal5]DeviceInt(HalDev:%08x, MoreWork:%08x)\n", (bit32u)HalDev, (bit32u)MoreWork);
+      osfuncSioFlush();
+     }
+#endif
+
+   /* Verify proper device state - important because a call prior to Open would
+      result in a lockup */
+   if (HalDev->State != enOpened)
+     return(EC_AAL5|EC_FUNC_DEVICE_INT|EC_VAL_INVALID_STATE);
+
+   NextTxHCh = HalDev->NextTxCh[0];
+//   NextTxLCh = HalDev->NextTxCh[1];
+   NextRxCh =  HalDev->NextRxCh;
+
+
+   /* service interrupts while there is more work to do */
+   /*while (((tmp=SAR_INTR_VECTOR(HalDev->dev_base))&INT_PENDING) && (TotalPkts < 500))*/
+   if ((tmp=SAR_INTR_VECTOR(HalDev->dev_base))&INT_PENDING)
+     {
+       /*printf("\015 %d RxQ",HalDev->RxActQueueCount[0]);
+         HalDev->OsFunc->Control(HalDev->OsDev, enSIO_FLUSH, enNULL, 0); */
+      if (tmp&TXH_PEND)
+        {
+					efm_stats.DevInt_TH_count++;
+
+         /* decide which channel to service */
+         FirstCh = NextTxHCh;
+         while (1)
+           {
+            Ch = NextTxHCh++;
+            if (NextTxHCh == NUM_EFM_CHAN)
+              NextTxHCh = 0;
+            if (SAR_TX_MASKED_STATUS(HalDev->dev_base) & (1<<Ch))  // do we need this?
+              break;
+
+            if (FirstCh == NextTxHCh)
+              {
+               /* we checked every channel and still haven't found anything to do */
+               return (EC_AAL5|EC_FUNC_DEVICE_INT|EC_VAL_NO_TXH_WORK_TO_DO);
+              }
+           }
+
+         rc = TxInt(HalDev,Ch,0,&WorkFlag);
+         if (rc) return (rc);
+
+         if (WorkFlag == 1)
+           *MoreWork = 1;
+        }
+
+      if (tmp&TXL_PEND)
+        {
+					efm_stats.DevInt_TL_count++;
+        }
+
+      if (tmp&RX_PEND)
+        {     
+				 efm_stats.DevInt_Rx_count++;
+         FirstCh = NextRxCh;
+         while (1)
+           {
+            Ch = NextRxCh++;
+            if (NextRxCh == NUM_EFM_CHAN)
+              NextRxCh = 0;
+            if (SAR_RX_MASKED_STATUS(HalDev->dev_base) & (1 << Ch))
+              break;  /* found a channel to service */
+            if (FirstCh == NextRxCh)
+              {
+               /* we checked every channel and still haven't found anything to do */
+               return (EC_AAL5|EC_FUNC_DEVICE_INT|EC_VAL_NO_RX_WORK_TO_DO);
+              }
+           }
+
+         rc = RxInt(HalDev,Ch, &WorkFlag);
+         if (rc) return (rc);
+
+         if (WorkFlag == 1)
+           *MoreWork = 1;
+        }
+
+      if (tmp&STS_PEND)
+      {
+				 efm_stats.DevInt_STS_count++;
+/* clear the interrupt */
+         SAR_STATUS_CLR_REG(HalDev->dev_base) |= 0x04000000;
+      }
+
+      SAR_INTR_VECTOR(HalDev->dev_base) = 0;
+     }
+    else
+     {
+      return (EC_VAL_INTERRUPT_NOT_FOUND);
+     }
+
+   HalDev->NextTxCh[0] = NextTxHCh;
+//   HalDev->NextTxCh[1] = NextTxLCh;
+   HalDev->NextRxCh = NextRxCh;
+
+   /* This must be done by the upper layer */
+   /* SAR_EOI(HalDev->dev_base) = 0; */
+
+   return (EC_NO_ERRORS);
+  }
+#endif  // AR7_EFM
+
 /*  +GSG 030305  For PITS #99
  *  Alternate interrupt handler that uses the INT_VECTOR in order to
  *  provide strict priority handling among channels, beginning with Ch 0.
@@ -2336,7 +2701,6 @@ static int DeviceIntAlt(HAL_DEVICE *HalDev, int *MoreWork)
         {
          /* decide which channel to service */
          Ch = ((SAR_INTR_VECTOR(HalDev->dev_base) & RX_PEND_INVEC) >> 8);
-
          rc = RxInt(HalDev,Ch,&WorkFlag);
          if (rc) return (rc);
 
@@ -2391,7 +2755,6 @@ static int DeviceInt(HAL_DEVICE *HalDev, int *MoreWork)
   {
     /*static int NextRxCh=0;
       static int NextTxCh[2]={0,0};*/
-
    int tmp, Ch, FirstCh, WorkFlag;
    int NextTxLCh, NextTxHCh, NextRxCh;
    bit32u rc;
@@ -2560,6 +2923,9 @@ static int halOpen(HAL_DEVICE *HalDev)
   {
    int i,Ret;
    bit32 SarBase = HalDev->dev_base;
+#ifdef AR7_EFM
+   int num_chan = (HalDev->EFM_mode ? NUM_EFM_CHAN : NUM_AAL5_CHAN);
+#endif
 
 #ifdef __CPHAL_DEBUG
    if (DBG(0))
@@ -2575,12 +2941,12 @@ static int halOpen(HAL_DEVICE *HalDev)
 
    /* Open the SAR (this brings the whole device out of reset */
    Ret = HalDev->SarFunc->Open(HalDev->SarDev); /* ~GSG 030410 */
+
    if (Ret)                                     /* +GSG 030410 */
      return (Ret);                              /* +GSG 030410 */
 
    /* Change device state */
    HalDev->State = enOpened;
-
 
 #ifdef __CPHAL_DEBUG
    /* print out the version information */
@@ -2640,8 +3006,13 @@ static int halOpen(HAL_DEVICE *HalDev)
    /* GSG +030523 Malloc space for the Rx fraglist */
    HalDev->fraglist = HalDev->OsFunc->Malloc(HalDev->MaxFrags * sizeof(FRAGLIST));
 
+#ifdef AR7_EFM
+   /* For any channels that have been pre-initialized, set them up now */
+   for (i=0; i<num_chan; i++)
+#else
    /* For any channels that have been pre-initialized, set them up now */
    for (i=0; i<NUM_AAL5_CHAN; i++)
+#endif
      {
       if ((HalDev->ChIsSetup[i][0]==TRUE) && (HalDev->ChIsOpen[i][0]==FALSE))
         {
@@ -2653,7 +3024,10 @@ static int halOpen(HAL_DEVICE *HalDev)
      }
 
    /* OAM code would be a candidate to go into ConfigApply */
-
+#ifdef AR7_EFM
+  if (!HalDev->EFM_mode)
+  {
+#endif
    /* Configure OAM Timer State Block */
    OamRateConfig(HalDev); /* +GSG 030416 */
 
@@ -2671,6 +3045,9 @@ static int halOpen(HAL_DEVICE *HalDev)
      {
       *(pOAM_PADDING_BLOCK_WORD_0(SarBase) + i) = ((i==11)?0x6a6a0000:0x6a6a6a6a);
      }
+#ifdef AR7_EFM
+  }
+#endif
 
    /* Enable Tx CPPI DMA */
    TX_CPPI_CTL_REG(HalDev->dev_base) = 1;
@@ -2678,14 +3055,26 @@ static int halOpen(HAL_DEVICE *HalDev)
    /* Enable Rx CPPI DMA */
    RX_CPPI_CTL_REG(HalDev->dev_base) = 1;
 
+
+#ifdef AR7_EFM
+  if (!HalDev->EFM_mode) // followings for ATM mode only
+#endif
    /* +GSG 030306 */
    /* Fix for PITS 103 */
    /* Enable Host Interrupt for GPR 2 (OAM LB result register) */
    SAR_HOST_INT_EN_SET_REG(HalDev->dev_base) |= 0x04000000;
 
+#ifdef AR7_EFM
+    if (HalDev->EFM_mode)
+    {
+      /* "register" the interrupt handler */
+      HalDev->OsFunc->IsrRegister(HalDev->OsDev, efmDeviceInt, HalDev->interrupt);
+    }
+    else
+#endif
    /* +GSG 030304 to fix PITS 99 (if block is new)*/
    if (HalDev->StrictPriority == 1)
-     {
+   {
 #ifdef __CPHAL_DEBUG
       if (DBG(1))
         {
@@ -2767,7 +3156,7 @@ static int halProbe(HAL_DEVICE *HalDev)
 
    /* Verify hardware state is "enConnected */
    if (HalDev->State != enConnected)
-     return (EC_AAL5|EC_FUNC_PROBE|EC_VAL_INVALID_STATE);
+     return (EC_AAL5|EC_FUNC_PROBE|EC_VAL_INVALID_STATE); 
 
 #ifdef __CPHAL_DEBUG
    if (DBG(1))
@@ -2812,6 +3201,10 @@ static int halProbe(HAL_DEVICE *HalDev)
 static int halShutdown(HAL_DEVICE *HalDev)
   {
    int Ch, Queue;                                                  /*GSG+030514*/
+#ifdef AR7_EFM
+   int num_chan = (HalDev->EFM_mode ? NUM_EFM_CHAN : NUM_AAL5_CHAN);
+   int num_queue = (HalDev->EFM_mode ? NUM_EFM_QUEUE : MAX_QUEUE);
+#endif
 
 #ifdef __CPHAL_DEBUG
    if (DBG(0))
@@ -2827,12 +3220,20 @@ static int halShutdown(HAL_DEVICE *HalDev)
 
    /* Buffer/descriptor resources may still need to be freed if a Close
       Mode 1 was performed prior to Shutdown - clean up here */    /*GSG+030514*/
+#ifdef AR7_EFM
+   for (Ch=0; Ch<num_chan; Ch++)
+#else
    for (Ch=0; Ch<NUM_AAL5_CHAN; Ch++)
+#endif
      {
       if (HalDev->RcbStart[Ch] != 0)
         FreeRx(HalDev,Ch);
 
+#ifdef AR7_EFM
+      for(Queue=0; Queue<num_queue; Queue++)
+#else
       for(Queue=0; Queue<MAX_QUEUE; Queue++)
+#endif
         {
          if (HalDev->TcbStart[Ch][Queue] != 0)
            FreeTx(HalDev,Ch,Queue);
@@ -2943,6 +3344,7 @@ static int halTick(HAL_DEVICE *HalDev)
  *           @ref EC_VAL_MALLOC_DEV_FAILED "EC_VAL_MALLOC_DEV_FAILED"<BR>
  *           @ref EC_VAL_MALLOC_FAILED "EC_VAL_MALLOC_FAILED"<BR>
  */
+
 int xxxInitModule(HAL_DEVICE **HalDev,
                  OS_DEVICE *OsDev,
                  HAL_FUNCTIONS **HalFunc,
@@ -3011,6 +3413,11 @@ int cpaal5InitModule(HAL_DEVICE **HalDev,
    /*HalFuncPtr->StatsGetOld = StatsGet;*/
    HalFuncPtr->PacketProcessEnd = halPacketProcessEnd;
 
+#ifdef AR7_EFM
+   HalFuncPtr->SetEFMmode      = halSetEFMmode;
+   HalFuncPtr->SetOSDev        = halSetOSDev;
+#endif
+
    /* Now, AAL5 must connect to the CPSAR layer */
 
    /* Attach to SAR HAL Functions */
@@ -3046,3 +3453,22 @@ int cpaal5InitModule(HAL_DEVICE **HalDev,
 
    return(EC_NO_ERRORS);
   }
+
+#ifdef AR7_EFM
+void efm_SetDevStateConnected(HAL_DEVICE *HalDev)
+{
+  HalDev->State = enConnected;
+}
+
+int efm_IsTearDownPending(HAL_DEVICE *HalDev, int num_chan)
+{
+  int ch;
+  for (ch=0; ch<num_chan; ch++)
+  {
+   if (HalDev->TxTeardownPending[ch] || HalDev->TxTeardownPending[ch])
+      return 1;
+  }
+  return 0;
+}
+
+#endif

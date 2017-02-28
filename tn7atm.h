@@ -4,13 +4,14 @@
  *    2000 (c) Texas Instruments Inc.
  *
  *   09/01/05 AV      Adding Instrumentation code for some of the key functions.
- *                    This can be enabled/disabled with the defining of the 
+ *                    This can be enabled/disabled with the defining of the
  *                    TIATM_INST_SUPP macro.(CQ 9907).
  *  9/22/05 AV   Adding support for the new LED driver in BasePSP 7.4. A new macro TN7DSL_LED_ACTION
  *               has been used to replace the direct calls to the old LED handler.
  * UR8_MERGE_START CQ10450   Jack Zhang
  * 4/04/06  JZ   CQ10450: Increase Interrupt pacing to 6 when downstream connection rate is higher than 20Mbps
  * UR8_MERGE_END   CQ10450*
+ * 09/18/07 CPH    CQ11466   Added EFM Support
  *************************************************************************************************/
 
 #ifndef __TN7ATM_H
@@ -25,6 +26,9 @@
 #include <linux/modversions.h>
 #endif
 
+#ifdef AR7_EFM
+#include "tn7efm.h"
+#endif
 #define ATM_REG_OK 1
 #define ATM_REG_FAILED 0
 
@@ -70,7 +74,7 @@ extern int avalanche_request_pacing(int irq_nr, unsigned int blk_num, unsigned i
 #include <asm/avalanche/generic/led_manager.h>
 
 /* LED handles */
-extern void *hnd_LED_0; 
+extern void *hnd_LED_0;
 
 #define MOD_ADSL          1
 #define DEF_ADSL_IDLE     1
@@ -125,7 +129,7 @@ extern void deregister_led_drv( int led_num);
 extern void led_operation(int mod,int state_id);
 
 /* LED handles */
-extern void *hnd_LED_0; 
+extern void *hnd_LED_0;
 
 #define TN7DSL_LED_ACTION(module_handle, module_name, state_id) led_operation(module_name, state_id)
 
@@ -151,7 +155,7 @@ extern void *hnd_LED_0;
 
 /* Avalanche SAR state information */
 
-typedef enum tn7atm_state 
+typedef enum tn7atm_state
 {
   TN7ATM_STATE_REGISTER             /* device registered */
 }tn7atm_state;
@@ -181,7 +185,7 @@ typedef struct _tn7atm_tx_lut
   int         tx_total_bufs;
   int         tx_used_bufs[2];
   int         netqueue_stop;
-}tn7atm_lut_t;              
+}tn7atm_lut_t;
 
 /* per device data */
 
@@ -218,10 +222,41 @@ typedef struct _tn7atm_private
   int                          xmitStop; /* temp fix for SAR problem */
 
 //UR8_MERGE_START CQ10450   Jack Zhang
-  unsigned int                chip_id;
+  unsigned int                 chip_id;
 //UR8_MERGE_END   CQ10450*
+
+#ifdef AR7_EFM
+  struct net_device           *efm_dev;                 /* EFM device */
+  char*                        efm_name;                 /* device name */
+  char*                        efm_proc_name;            /* board name under /proc/atm */
+
+  // The followings are used to set the appropriate Tx/Rx buf size during mode switching
+  int                          efm_sarRxBuf;//@Added to make Rx buffer configurable.
+  int                          efm_sarRxMax;//@Added to make Rx service max configurable
+  int                          efm_sarTxBuf;//@Added to make Tx buffer configurable.
+  int                          efm_sarTxMax;//@Added to make Tx service max configurable
+
+  int                          available_tx_bufs[NUM_EFM_CHAN];    /* Available tx buffs */
+  unsigned int                 efm_ctl;        // read from env var EFM_CTL
+  int                          curr_TC_mode;        // 1=ATM, 2=PTM(EFM)
+  int                          EFM_mode;       // 0= ATM, 1=EFM, 4=EFM_LB,
+  int                          target_TC_mode;
+  struct tasklet_struct        tn7efm_tasklet;
+  unsigned char                efm_mac_addr[6];
+  
+  // efm_initialized is used to check if EFM has been initialzed (once) or not. 
+  // During mode switching, not all of the structure are teardown & re-create,
+  // this flag is used to initialize these structure. 
+  // This info is used during auto-switch to determine whether tn7efm_init()
+  // or tn7efm_detect() need to be run.
+  int                          efm_initialized; // 0=tn7efm_detect has not been run, 1= tn7efm_detect has been run
+  int                          mode_switching; // 0=Not switching. 1=In the middle of switching.
+  void                         *pIhw;
+#endif
 }tn7atm_private_t, Tn7AtmPrivate;
 
+
+#define RESERVED_OAM_CHANNEL              15
 
 
 /* ATM adaptation layer id */
@@ -250,13 +285,13 @@ typedef struct dsl_read_write {
 /* Params for the activate vc function */
 typedef struct
 {
-    Tn7AtmPrivate *priv; 
+    Tn7AtmPrivate *priv;
     int vpi;
-    int vci; 
-    int pcr; 
-    int scr; 
-    int mbs; 
-    int cdvt; 
+    int vci;
+    int pcr;
+    int scr;
+    int mbs;
+    int cdvt;
     int chan;
     int qos;
     int priority;
@@ -275,4 +310,4 @@ typedef struct
 #define PHYS_TO_K1(X)                             (PHYS_ADDR(X)|K1BASE)
 #endif
 
-#endif __TN7ATM_H
+#endif  // __TN7ATM_H

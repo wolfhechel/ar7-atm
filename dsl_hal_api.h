@@ -180,7 +180,7 @@
 // UR8_MERGE_START APIBits ManjulaK
 *    26July06           ManjulaK/HT CQ10781: Added OAMFEATURE_PHY_ENABLE_LOWER_GHS_TONE_POWER API bit
 *                                   CQ10784: Added OAMFEATURE_PHY_ENABLE_REDUCE_GHS_FALL_BACK_TIME API bit
-*    08Aug06            Ram         CQ10774,84: Added OAMFEATURE_ENABLE_TELIA_SONERA_FIX and removed 
+*    08Aug06            Ram         CQ10774,84: Added OAMFEATURE_ENABLE_TELIA_SONERA_FIX and removed
 *                                   OAMFEATURE_PHY_ENABLE_REDUCE_GHS_FALL_BACK_TIME bit to consolidate Telia fixes
 *    11Aug06            Mark Bryan  CQ10566: Added OAMFEATURE_PHY_ENABLE_GHSCABMODE API bit
 // UR8_MERGE_END APIBits
@@ -190,7 +190,7 @@
 // UR8_MERGE_START APIBits ManjulaK
 *   20Oct06             Manjula/HT  CQ11023/CQ11032: Added OAMFEATURE_ENABLE_PCCW_CNXT_FIX API bit
                                     CQ11031 : Added OAMFEATURE_ENABLE_VERSION_NO_16BYTES API bit
-                                    CQ11021/CQ11022: Added OAMFEATURE_ENABLE_NORWAY_COMLAB_FIX API bit                        
+                                    CQ11021/CQ11022: Added OAMFEATURE_ENABLE_NORWAY_COMLAB_FIX API bit
                         Manjula/YW  CQ10913: Added OAMFEATURE_PHY_DISABLE_ANNEXM_SUPPORT API bit
                         Manjula/KC  CQ11080: Added OAMFEATURE_ENABLE_CTLM_LOW_USRATE_FIX API bit
 // UR8_MERGE_END APIBits
@@ -218,14 +218,14 @@
 // UR8_MERGE_END CQ11057 KCCHEN
 *  UR8_MERGE_START   CQ11228 HZ
 *  12/08/06     Hao Zhou CQ11228: Modify the DS Margin report to 0.1dB precision.
-*  UR8_MERGE_END   CQ11228 HZ 
+*  UR8_MERGE_END   CQ11228 HZ
 *  UR8_MERGE_START CQ11054   Jack Zhang
 *  10/11/06  JZ     CQ11054: Data Precision and Range Changes for TR-069 Conformance
 *  UR8_MERGE_END   CQ11054*
 *  UR8_MERGE_START_END CQ11277 Ram
 * 12/22/06              Ram         CQ11277: Added OAMFEATURE_ENABLE_ADSL2_2PLUS_HLIN
 // UR8_MERGE_START_END CQ11247_TR69_DS_LATN_SATN  YW
-// 12/18/06   Yan Wang      CQ11247: TR069 range and precision changes for LATNds, SATNds  
+// 12/18/06   Yan Wang      CQ11247: TR069 range and precision changes for LATNds, SATNds
 *  UR8_MERGE_START CQ11230
 *  12/27/06   Hao-Ting Lin
 *  Add OAMFEATURE_FEATURE1 BIT0 for TR067 DSPCB test.
@@ -233,7 +233,7 @@
 *  UR8_MERGE_START_END CQ11281 Ram
 * 12/22/06              Ram         CQ11281: Added OAMFEATURE_ENABLE_GHS_SHORT_RESET
 //UR8_MERGE_START_END CQ11306 AdeelJ
-// 01/10/07  AdeelJ  CQ11306: Added OAMFEATURE_FEATURE1 BIT1 for Annex B improvement at OTE Greece 
+// 01/10/07  AdeelJ  CQ11306: Added OAMFEATURE_FEATURE1 BIT1 for Annex B improvement at OTE Greece
 //UR8_MERGE_START CQ11425 KCCHEN
 // 02/05/07  KCCHEN  CQ11425: Added OAMFEATURE_FEATURE1 BIT4 for Aztech Connexant's wrong read of near and far end
 //                                  aggregate power of DS PMD.
@@ -245,6 +245,36 @@
 *  UR8_MERGE_START_END CQ11260 WT100_CTLM_B900 HL
 * 01/15/07    Hanyu Liu CQ11260: Defined OAMFEATURE_FEATURE1_ENABLE_CTLM_B900_O2_FIX
 *                                and OAMFEATURE_FEATURE1_ENABLE_FORCED_US_PCB_14DB_NULLLOOP.
+* UR8_MERGE_START_END CQ11544 Tim
+* 04/16/07    Tim B  CQ11544: Added variable for uncancelled echo
+//UR8_MERGE_START_END CQ11709 Tim
+* 05/01/07    Tim    CQ11709: Added support for AT&T priority 1 statistics
+*  UR8_MERGE_START CQ11813 Hao-Ting
+* 06/11/07 Hao-Ting CQ11813: CLI redirect support in linux
+*                            Mark unused function by LINUX_CLI_SUPPORT flag
+*  UR8_MERGE_END CQ11813
+*  UR8_MERGE_START_END monitored_tones MB
+*  05/25/2007 Mark Bryan   CQ11745: Added OAMFEATURE_PHY_DISABLE_MONITORED_TONES.
+* UR8_MERGE_START CQ11803 KCCHEN/Ram
+* 06/12/07  Ram    CQ11803: Added new API bit for US ATTNDR Update Fix
+*                           Added new API function to update US ATTNDR
+* UR8_MERGE_END CQ11803 KCCHEN/Ram
+* UR8_MERGE_START CQ11724 Ram
+*  06/11/07 Ram     CQ11724: New PHY_0 API bit 23 for CPE initiated DELT.
+*                              ENABLE_CPE_INITIATED_DELT,
+*                   CQ11781: Updated missing API bit declaration for Two Tone Timing
+* UR8_MERGE_END CQ11724 Ram
+* UR8_MERGE_START_END CQ11818 Ram
+*  06/11/07 Ram     CQ11818: Added a new API bit for TDC fixes.
+*  UR8_MERGE_START_START_END CQ11661 HL
+*  06/19/07 Hanyu    CQ11661: Added OAMFEATURE_FEATURE1_ENABLE_ADSL2PLUS_FASTPATH_STABILITY.
+*  07/02/07 Hao      CQ11781: Modify API bit declaration for Two Tone Timing and put reservation
+*                             for BIT26, BIT27, BIT28.
+*  09/11/07 Ram      CQ11931: Added new API bit for forced enable Monitored tones IOP1 bit9
+*  09/12/07 EYin     CQ11929: Define NFEC/INP/Lp/Rp and usSNR in TIOIDINFO structure
+*  UR8_MERGE_START_END CQ11922 Tim
+*  09/04/07 Tim      CQ11922: Added on scratchram entry and a new API bit for PTM mode
+*  09/19/07 CPH      CQ11466: Added EFM support
 *******************************************************************************/
 
 #ifdef INTERNAL_BUILD
@@ -268,6 +298,8 @@
 #define INTEROP_FEATURELIST0_PARAMID                        0x00000002
 #define INTEROP_FEATURELIST1_PARAMID                        0x00000003
 
+//UR8_MERGE_START_END monitored_tones MB
+#define OAMFEATURE_PHY_DISABLE_MONITORED_TONES              0x00000040  // Bit6, CQ11745
 #define OAMFEATURE_PHY_DISABLE_EXTENDED_FRAMING_SUPPORT     0x00000080  // Bit7, CQ10280
 #define OAMFEATURE_PHY_ENABLE_EXTENDED_INP_SUPPORT          0x00000100  // Bit8, CQ10280
 // UR8_MERGE_START API-Bits PeterHou
@@ -298,6 +330,19 @@
 #define OAMFEATURE_ENABLE_GHS_SHORT_RESET                  0x00100000  // Bit20, CQ11281 Ram
 // UR8_MERGE_START_END CQ11467 ANNEX_I_GHS  HL
 #define OAMFEATURE_PHY_ENABLE_ANNEXI_SUPPORT               0x00200000  // Bit21, CQ11467 HL
+// UR8_MERGE_START CQ11544 Tim
+#define OAMFEATURE_PHY_UNCANCELLED_ECHO_METRIC             0x00400000  // Bit22, CQ11544 Tim
+// UR8_MERGE_START_END CQ11724 Ram
+#define OAMFEATURE_PHY_CPE_INITIATED_DELT                  0x00800000  // Bit23, CQ11724 Ram
+// UR8_MERGE_START CQ11781 HAO
+#define  OAMFEATURE_PHY_ENABLE_TWOTONE_ADSL1_TIMING         0x01000000  // Bit24, CQ11781 HAO
+#define  OAMFEATURE_PHY_DISABLE_TWOTONE_A2PLUS_TIMING       0x02000000  // Bit25, CQ11781 HAO
+// UR8_MERGE_START_END CQ11922 Tim
+#define  OAMFEATURE_PHY_ENABLE_PTM_PREFERED                 0x04000000  // Bit26, CQ11922
+// UR8_MERGE_START_END CQ11922 Tim
+#define  OAMFEATURE_PHY_ENABLE_FORCE_PTM                    0x08000000  // Bit27, CQ11922
+#define  OAMFEATURE_PHY_RESERVED_API3                   0x10000000  // Bit28, CQ11781 HAO
+// UR8_MERGE_END CQ11781 HAO
 // UR8_MERGE_START UR8_MERGE_START_END CQ11004 Nima
 #define OAMFEATURE_PHY_TI_INTERNAL2                         0x20000000 // Bit29, CQ11004
 // UR8_MERGE_START API-Bit ManjulaK
@@ -336,7 +381,7 @@
 // UR8_MERGE_START_END CQ10774,84 Ram
 #define OAMFEATURE_ENABLE_TELIA_SONERA_FIX                  0x00800000    //CQ10774,84 - for Telia specific fixes
 // UR8_MERGE_START CQ11075_API25 YW
-#define OAMFEATURE_ENABLE_ECHO_BAND_DS_SNR_CUTBACK          0x01000000    //CQ10899 SNR cutback for Showtime stability 
+#define OAMFEATURE_ENABLE_ECHO_BAND_DS_SNR_CUTBACK          0x01000000    //CQ10899 SNR cutback for Showtime stability
 #define OAMFEATURE_ENABLE_LINE_STABILITY_2DBPAD_MARGIN      0x02000000    //Enables 2dB additional noise margin to improve ong term line stability.
 // UR8_MERGE_END CQ11075_API25 YW
 // UR8_MERGE_START APIBits Manjulak
@@ -363,8 +408,16 @@
 //UR8_MERGE_START CQ11307 Ram
 //UR8_MERGE_START CQ11425 KCCHEN
 #define OAMFEATURE_FEATURE1_ENABLE_CNXT_PMD_FIX                      0x00000010    //CQ11425 - ENABLE CNXT's PMD FIX
+//UR8_MERGE_START_END CQ11307 Ram
 #define OAMFEATURE_FEATURE1_ENABLE_BRITISH_TELECOM_FIX               0x00000020    //CQ11307
-//UR8_MERGE_END CQ11307 Ram
+// UR8_MERGE_START_START_END CQ11661 HL
+#define OAMFEATURE_FEATURE1_ENABLE_ADSL2PLUS_FASTPATH_STABILITY      0x00000040    //CQ11661 HL
+//UR8_MERGE_START_END CQ11818 Ram
+#define OAMFEATURE_FEATURE1_ENABLE_TDC_FIX                           0x00000080    //CQ11818
+//UR8_MERGE_START_END CQ11803 KCCHEN/Ram
+#define OAMFEATURE_FEATURE1_ENABLE_USATTNDR_UPDATE_FIX               0x00000100    //CQ11803
+//UR8_MERGE_START_END CQ11931 Ram
+#define OAMFEATURE_FEATURE1_ENABLE_FORCED_MONITORED_TONES             0x00000200    //CQ11931
 
 typedef struct tagT1413Info
 {
@@ -377,6 +430,9 @@ typedef struct tagT1413Info
 typedef struct tagTIOIDINFO
 {
   unsigned int   bState;           /* addr->bDSPATURState    */
+#ifdef AR7_EFM
+  unsigned int   CurrDslState;
+#endif
   unsigned int   clear_eoc;        /* 1: clearEOC msg indicator; 0: otherwise */
   unsigned int   USConRate;        /* US Conection Rates */
   unsigned int   DSConRate;        /* DS Connection Rates */
@@ -550,17 +606,37 @@ typedef struct tagTIOIDINFO
   int            dsACTPSD;    // Downstream actual power spectral density.
   int            usACTPSD;    // Upstream actual power spectral density.
   int            dsHLINSC;    // Downstream linear representation scale.
+//UR8_MERGE_START CQ11709 Tim
+  unsigned short dsHlogMT;    //Downstream Hlog measurement time
+  unsigned short dsSNRMT;     //Downstream SNR measurement time
+  unsigned short dsQLNMT;     //Downstream QLN measurement time
+//UR8_MERGE_END CQ11709 Tim
+//UR8_MERGE_START_END CQ11544 Tim
+  int            uncancelledEcho;
 //  UR8_MERGE_END   CQ10979*
 //  UR8_MERGE_START CQ10978   Jack Zhang
   unsigned char  pwrStatus;   // DSL Power Management Status.
 //  UINT8                 pad[3];      // pading to 32 bits.
 //  UR8_MERGE_END   CQ10978*
+
 #ifdef CLI2HOST_SUPPORT
   unsigned int   cliBuffsize;    /* This value does not contain vars after raw clidata (CQ10242)*/
   unsigned char  *p_cliBuffAddr; /* This is in MIPS context */
   unsigned int   cliRedirect;    /* The redirect mode: McBSP(default), redirect, both */
   unsigned int   readPointer;    /* Readindex of the circular buffer */
 #endif //CLI2HOST_SUPPORT
+
+  // Add Nfec/Rp/Lp
+  unsigned int   usNFEC;           // codeword size
+  unsigned int   usINP;
+  unsigned short usLp;
+  unsigned short usRp;
+
+  unsigned int   dsNFEC;           // codeword size
+  unsigned int   dsINP;
+  unsigned short dsLp;
+  unsigned short dsRp;
+
 }TIOIDINFO,*PTIOIDINFO;
 
 typedef struct{
@@ -812,6 +888,18 @@ enum
   ID_DSL_ACT_LED
 };
 
+
+#ifndef TC_MODE
+#define TC_MODE
+// This is also defined in tn7efm.h
+// Send with DSP_GHS_TCMODE in parameter 0 to host.
+enum {
+  TC_MODE_STM,
+  TC_MODE_ATM,
+  TC_MODE_PTM,  // EFM mode
+};
+#endif
+
 typedef struct _ITIDSLHW
 {
   /* struct _TIDSL_IHwVtbl * pVtbl; */
@@ -847,7 +935,8 @@ typedef struct _ITIDSLHW
   dspVer            dspVer;
 
   OlayDP_Def        olayDpPage[32];
-  OlayDP_Def        coProfiles[5];
+  // UR8_MERGE_START_END CQ11922 Tim
+  OlayDP_Def        coProfiles[6];
   OlayDP_Def        constDisplay;
   dslBitSwapDef     dsBitSwap[30];
   dslBitSwapDef     usBitSwap[30];
@@ -857,6 +946,12 @@ typedef struct _ITIDSLHW
   adsl2Msgs         adsl2TrainingMessages;
   adsl2DeltMsgs     adsl2DiagnosticMessages;
   unsigned int      modemStateBitField[4];
+
+// UR8_MERGE_START CQ11466
+#ifdef AR7_EFM
+  int ghs_TCmode;                 /* TC_MODE_ATM or TC_MODE_PTM (EFM) */
+#endif  
+// UR8_MERGE_END CQ11466
 
 #ifdef INTERNAL_BUILD
   internalParameters internalVars;
@@ -1190,7 +1285,11 @@ void dslhal_api_redirectMode(ITIDSLHW_T *ptidsl, unsigned char mode);
 * NOTE:
 *
 ********************************************************************************************/
+//UR8_MERGE_START CQ11813 Hao-Ting
+#ifndef LINUX_CLI_SUPPORT
 void dslhal_api_redirectPrint(ITIDSLHW_T *ptidsl);
+#endif
+//UR8_MERGE_END CQ11813
 
 
 //UR8_MERGE_START GERALD_CQ_REDIRECT_BUGFIX2_20060328 Gerald
@@ -2215,7 +2314,7 @@ unsigned int cmd
  * FUNCTION NAME:    dslhal_api_sendL3Command(tidsl_t *ptidsl)
  *
  *******************************************************************************************
- * DESCRIPTION: This fuction sends a L3 command to the DSP via the mailbox message 
+ * DESCRIPTION: This fuction sends a L3 command to the DSP via the mailbox message
  *
  * INPUT:  PITIDSLHW_T *ptidsl
  *
@@ -2296,7 +2395,7 @@ void *phyFeature
 );
 // UR8_MERGE_START CQ11057   Jack Zhang
 
-//from #include "dev_host_interface.h" 
+//from #include "dev_host_interface.h"
 
 // Duplicate DEV_HOST_BIS_PMD_TEST_PARAMETERS_FROM_CO_Def_t
 
@@ -2312,15 +2411,25 @@ typedef struct tagCoPMDTestParams{
 
   unsigned short co_satn;
 
+  unsigned long co_attndr;
+
   signed short usMargin;                  // DSP Write, measured US margin
 
   signed short dummy;
 
-  unsigned long co_attndr;
-
   signed short co_near_actatp;
 
   signed short co_far_actatp;
+
+//UR8_MERGE_START CQ11709 Tim
+  unsigned short usHLOGMT;
+
+  unsigned short usSNRMT;
+
+  unsigned short usQLNMT;
+
+  unsigned short dummy2;
+//UR8_MERGE_END CQ11709 Tim
 
 }CoPMDTestParams_t;
 // UR8_MERGE_END CQ11057   Jack Zhang
@@ -2448,7 +2557,7 @@ unsigned int dslhal_api_getHLINpsds(tidsl_t * ptidsl, unsigned char *outbuf, int
 *
 ********************************************************************************************/
 
-unsigned int dslhal_api_getHighPrecision();
+unsigned int dslhal_api_getHighPrecision(void);
 
 /********************************************************************************************
 * FUNCTION NAME: void dslhal_api_setHighPrecision
@@ -2459,8 +2568,23 @@ unsigned int dslhal_api_getHighPrecision();
 * Return: None
 ********************************************************************************************/
 
-void dslhal_api_setHighPrecision();
+void dslhal_api_setHighPrecision(void);
 //  UR8_MERGE_END   CQ11054*
+
+//  UR8_MERGE_START CQ11803   Ram
+/********************************************************************************************
+* FUNCTION NAME: dslhal_api_deltaUSMaxAttainableNDR
+*
+*********************************************************************************************
+* DESCRIPTION: Delta between current and initial Upstream Max Attainable Net Data Rate
+* Input:  PITIDSLHW_T *ptidsl,
+* Return: Delta US Max Attainable NDR Estimate
+*
+********************************************************************************************/
+#ifndef NO_ADV_STATS
+int dslhal_api_deltaUSMaxAttainableNDR(tidsl_t * ptidsl);
+#endif
+//  UR8_MERGE_END CQ11803   Ram
 
 #ifdef INTERNAL_BUILD
 #include <dsl_hal_internal_api.h>

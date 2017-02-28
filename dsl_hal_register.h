@@ -64,6 +64,7 @@
 *    18July05    0.02.05            CPH    CQ9600 Sync Training msg Index with ctrl_msm_decl.h.
 *    29July05    0.02.06            CPH    Remove US_BNG_LENGTH & DS_BNG_LENGTH.
 *    05Sept05    0.02.07            CPH    Added DSLHAL_ERROR_UNSUPPORTED_MODE & DSLHAL_ERROR_GENERAL_FAILURE.
+*    18Sept07    0.02.08            CPH    CQ11466: Added EFM Support
 *******************************************************************************/
 
 //#include <env_def_typedefs.h>
@@ -362,10 +363,13 @@ enum
 
 enum
 {
-  CONFIG_FLAG_NOFLAG,                             /* 00 */
-  CONFIG_FLAG_TRELLIS,                            /* 01 */
-  CONFIG_FLAG_EC,                                 /* 02 */
-  CONFIG_FLAG_RS                                  /* 03 */
+  CONFIG_FLAG_NOFLAG=0,                             /* 00 */
+  CONFIG_FLAG_TRELLIS=1,                            /* 01 */
+  CONFIG_FLAG_EC=2,                                 /* 02 */
+  CONFIG_FLAG_RS=4,                                 /* 04 */
+#ifdef AR7_EFM
+  CONFIG_FLAG_TC=8                                  /* 08, TC Mode set */
+#endif
 };
 
 #define USE_EMIF_REV                              0

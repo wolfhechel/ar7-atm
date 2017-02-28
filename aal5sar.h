@@ -11,7 +11,7 @@
  *      28Feb02 Greg       1.00  Original Version created.
  *      06Mar02 Greg       1.01  Documented structures.
  *      18Jul02 Greg       1.02  Major reorganization
- *
+ *      18Sept07 CPH       2.00  CQ11466: Added EFM support
  *****************************************************************************/
 #ifndef _INC_AAL5SAR
 #define _INC_AAL5SAR
@@ -27,6 +27,7 @@ const char *pszVersion_CPAAL5="CPAAL5 01.07.2c "__DATE__" "__TIME__;
 #define MAX_AAL5_CHAN   15
 #define MAX_QUEUE       2
 #define MAX_DIRECTION   2
+
 
 #define PKT_TYPE_AAL5   0   /* +GSG 030508 */
 #define PKT_TYPE_NULL   1   /* +GSG 030508 */
@@ -193,6 +194,9 @@ typedef struct hal_device
   int MaxFrags;
   bit32u TurboDslErrors;
   bit32u OamLbTimeout;
+#ifdef AR7_EFM
+  int EFM_mode;
+#endif
   }HALDEVICE;
 
 #endif

@@ -44,7 +44,7 @@
  *  11/3/05  JZ  Added code to convert old mode to new bit mode in tn7dsl_set_modulation()
  *  1/16/06 CPH  CQ10269 Fixed tn7dsl_clear_eoc_close() crash problem
  *  01/25/06 JZ   CQ: 10273 Aztech/Singtel oam pvc management issue, new PDSP 0.54
- *  01/25/06 JZ   CQ: 10275 Add Remote Data Log code. Search ADV_DIAG_STATS in ATM  
+ *  01/25/06 JZ   CQ: 10275 Add Remote Data Log code. Search ADV_DIAG_STATS in ATM
  *                driver code and manually turn on it for enabling the feature
  *  UR8_MERGE_START Report_SES Manjula K
  *  03/14/06 MK  CQ10369: Added print statement to report errored Seconds and severely errored secs.
@@ -59,7 +59,7 @@
  * 05/19/06 MK   CQ10505: Report vendor id through inventory command in ADSL2/2+ mode
  * UR8_MERGE_END CQ10505
  * UR8_MERGE_START CQ10442 Manjula K
- * 05/31/06 MK   CQ10442: Added code to boost interrupt pacing to 6 when SRA occurs and DS connect rate jumps 
+ * 05/31/06 MK   CQ10442: Added code to boost interrupt pacing to 6 when SRA occurs and DS connect rate jumps
  *                        higher than 20Mbps.
  * UR8_MERGE_END CQ10442
  * UR8_MERGE_START CQ10639 Manjula K
@@ -93,6 +93,14 @@
 *  UR8_MERGE_START CQ11054   Jack Zhang
 *  1/02/07  JZ     CQ11054: Data Precision and Range Changes for TR-069 Conformance
 *  UR8_MERGE_END   CQ11054*
+*  UR8_MERGE_START CQ11579 Jeremy : #1 - corrected TxPower to allow negative # reporting
+*  04/02/07                         #2 - corrected T1413 MaxAttainableRate
+*  UR8_MERGE_END CQ11579
+*  UR8_MERGE_START CQ11813 Hao-Ting Lin
+*  06/11/07 Hao-Ting CQ11813 CLI redirect support in linux
+*                            Add debug message Init and Print function for /proc entry
+*  UR8_MERGE_END   CQ11813
+*  09/18/07 CPH   CQ11466: Added EFM support.
  *********************************************************************************************/
 #include <linux/config.h>
 #include <linux/kernel.h>
@@ -112,6 +120,10 @@
 #include <linux/vmalloc.h>
 #include <linux/file.h>
 /* Modules specific header files */
+#ifdef AR7_EFM
+#include "tn7efm.h"
+#endif
+
 #include "tn7atm.h"
 #include "tn7api.h"
 #include "dsl_hal_api.h"
@@ -285,7 +297,12 @@ enum
 /* *INDENT-ON* */
 
 #ifndef ADIAG
+#ifdef AR7_EFM
+unsigned char DSP_FIRMWARE_PATH[]= "/lib/modules/ar0700xx.bin";
+#define DSP_DEBUG_FIRMWARE_PATH  "/var/ar0700xx.bin"
+#else
 #define DSP_FIRMWARE_PATH "/lib/modules/ar0700xx.bin"
+#endif
 #else
 #define DSP_FIRMWARE_PATH "/var/tmp/ar0700xx_diag.bin"
 #endif
@@ -322,6 +339,35 @@ static int tn7dsl_proc_snr_print (char *buf, int count, int *eof, int data);
 #define gInt(a) ((int)a/10)
 #define gDot1(a) ((a>0)?(a%10):((-a)%10))
 //  UR8_MERGE_END   CQ11054*
+#ifdef AR7_EFM
+void *tn7dsl_get_pIhw(void);
+void *tn7dsl_get_pIhw(void)
+{
+  return pIhw;
+}
+
+void tn7dsl_disable_alarm(void)
+{
+    unsigned int alarmEnable=0;
+
+  // disable alarm
+    dslhal_api_setMarginMonitorFlags(pIhw,1,alarmEnable);
+
+    dslhal_api_disableLosAlarm(pIhw,!alarmEnable);
+}
+
+#endif
+
+//cph 9/6/07 Automatically detect 0x or not 0x and pass to atoh & atoi accordingly.
+int os_atoih (const char *pstr)
+{
+  int val;
+  if((pstr[0] == '0') && ((pstr[1] == 'x') || (pstr[2] == 'X')))
+    val = os_atoh(&pstr[2]);
+  else
+    val = os_atoi(pstr);
+  return val;
+}
 
 int os_atoi(const char *pStr)
 {
@@ -402,9 +448,9 @@ int tn7dsl_dump_dsp_memory(char *input_str) //cph99
     unsigned int buf[20];
 
     /* Read the first 8 characters for the address */
-    for(i=0; i<8; i++)    
+    for(i=0; i<8; i++)
       tmp[i] = input_str[i];
-      
+
     tmp[i] = '\0';
     addr = os_atoh(tmp);
     /* Read the remaining characters as the value */
@@ -448,13 +494,55 @@ int shim_osLoadFWImage(unsigned char *ptr)
   static struct file *filp;
   unsigned int imageLength=0x5ffff;
 
+#ifdef AR7_EFM
+  int dp_alt=0;
+  char *ptr1=NULL;
+#ifdef EFM_DEBUG  
+  char *ptr2=NULL;
+  char *ptr3=NULL;
+#endif    
+
+  if ((ptr1 = prom_getenv("DSL_DP_ALT")) != NULL)
+  {
+    dp_alt=os_atoi(ptr1);
+    if (dp_alt==1)
+    {
+      filp = filp_open(DSP_DEBUG_FIRMWARE_PATH,00,O_RDONLY);
+      if (!IS_ERR(filp))
+      {
+          strcpy (DSP_FIRMWARE_PATH, DSP_DEBUG_FIRMWARE_PATH);
+      }
+    }
+#ifdef EFM_DEBUG    
+    else if (dp_alt==2)
+    {
+      if ((ptr2 = prom_getenv("DSL_DP")) != NULL)
+      {
+        if (!strncmp(ptr2, "DSL_DP", 6))
+        { // indirect naming
+          if ((ptr3 = prom_getenv(ptr2)) != NULL)
+          filp = filp_open(ptr3,00,O_RDONLY);
+          ptr2 = ptr3; // redirect ptr2 to ptr3
+        }
+
+        filp = filp_open(ptr2,00,O_RDONLY);
+        if (!IS_ERR(filp))
+        {
+          strcpy (DSP_FIRMWARE_PATH, ptr2);
+        }
+      }
+    }
+    printk("dp_path=%s\n", DSP_FIRMWARE_PATH);
+#endif    
+  }
+#endif
 
   dgprintf(4, "tn7dsl_read_dsp()\n");
 
   dgprintf(4,"open file %s\n", DSP_FIRMWARE_PATH);
 
   filp=filp_open(DSP_FIRMWARE_PATH,00,O_RDONLY);
-  if(filp ==NULL)
+  if(IS_ERR(filp))
   {
     printk("Failed: Could not open DSP binary file\n");
           return -1;
@@ -854,7 +942,7 @@ int tn7dsl_proc_adv_stats(char* buf, char **start, off_t offset, int count,
   if( ctr == 0)
   {
     len = proc_adv_stats_header( cp, limit);
-                   
+
     if( len<=limit)
       len += sprintf(cp+len, "\n\tBin No.\tBits:\tMargin:\tSNR\n");
   }
@@ -862,12 +950,12 @@ int tn7dsl_proc_adv_stats(char* buf, char **start, off_t offset, int count,
   {
     strt = ctr;
   }
-    
+
   for( i =strt; i<512; i++)
   {
     if(len<=limit)
     {
-      len += sprintf(cp+len, "\t%u\t%u\t%u\t%d\n", i, 
+      len += sprintf(cp+len, "\t%u\t%u\t%u\t%d\n", i,
                     (unsigned int)pIhw->AppData.BitAllocTblDstrm[i],
                     (unsigned int)pIhw->AppData.marginTblDstrm[i],
                     (int)pIhw->AppData.rxSnrPerBin0[i]);
@@ -931,7 +1019,7 @@ static int proc_adv_stats_header(char* buf, int limit)
     }
   }
 //  UR8_MERGE_END   CQ11054*
-                   
+
   /*
    * Downstream/Upstream Interleaved Errors
    */
@@ -954,16 +1042,16 @@ static int proc_adv_stats_header(char* buf, int limit)
     len += sprintf(buf+len, "\t[Fast path] DS (RX):\tCRC: \t%u\tFEC: \t%u\n",
                    (unsigned int)pIhw->AppData.dsFCRC_errors,
                    (unsigned int)pIhw->AppData.dsFFEC_errors);
-                   
+
   return len;
 }
 
 static int getDiagDisplayMode()
 {
   int ret = 0;
-  
+
   unsigned int  modeADSL1 = OLD_TRAINING_VAL_GDMT;
-  
+
   //tn7dsl_set_dslmodes();
 
   if (pIhw->AppData.useBitField)
@@ -994,13 +1082,13 @@ int tn7dsl_proc_adv_stats1(char* buf, char **start, off_t offset, int count,
 
   if(len<=limit)
     len += sprintf(buf+len, "\tBin No.\tBits:\tMargin:\tSNR (Part 1 of 3)\n");
-    
+
   if(mode==1) //ADSL1
   {
   for( i =32; i<128; i++)
   {
     if(len<=limit)
-      len += sprintf(buf+len, "\t%u\t%u\t%u\t%d\n", i, 
+      len += sprintf(buf+len, "\t%u\t%u\t%u\t%d\n", i,
                     (unsigned int)pIhw->AppData.BitAllocTblDstrm[i],
                     (unsigned int)pIhw->AppData.marginTblDstrm[i],
                     (int)pIhw->AppData.rxSnrPerBin0[i]);
@@ -1016,7 +1104,7 @@ int tn7dsl_proc_adv_stats1(char* buf, char **start, off_t offset, int count,
     for( i =32; i<128; i++)
     {
       if(len<=limit)
-          len += sprintf(buf+len, "\t%u\t%u\t%u\t%d\n", i, 
+          len += sprintf(buf+len, "\t%u\t%u\t%u\t%d\n", i,
                     (unsigned int)pIhw->AppData.BitAllocTblDstrm[i],
                     (unsigned int)pIhw->AppData.marginTblDstrm[i],
                     (i<pIhw->AppData.max_ds_tones)?(unsigned char)SNRpsds[i]:0);
@@ -1045,7 +1133,7 @@ int tn7dsl_proc_adv_stats2(char* buf, char **start, off_t offset, int count,
     for( i =128; i<320; i++)
     {
   if(len<=limit)
-        len += sprintf(buf+len, "\t%u\t%u\t%u\t%d\n", i, 
+        len += sprintf(buf+len, "\t%u\t%u\t%u\t%d\n", i,
                     (unsigned int)pIhw->AppData.BitAllocTblDstrm[i],
                     (unsigned int)pIhw->AppData.marginTblDstrm[i],
                     (int)pIhw->AppData.rxSnrPerBin0[i]);
@@ -1061,7 +1149,7 @@ int tn7dsl_proc_adv_stats2(char* buf, char **start, off_t offset, int count,
   for( i =128; i<320; i++)
   {
     if(len<=limit)
-      len += sprintf(buf+len, "\t%u\t%u\t%u\t%d\n", i, 
+      len += sprintf(buf+len, "\t%u\t%u\t%u\t%d\n", i,
                     (unsigned int)pIhw->AppData.BitAllocTblDstrm[i],
                     (unsigned int)pIhw->AppData.marginTblDstrm[i],
                     (i<pIhw->AppData.max_ds_tones)?(unsigned char)SNRpsds[i]:0);
@@ -1090,7 +1178,7 @@ int tn7dsl_proc_adv_stats3(char* buf, char **start, off_t offset, int count,
     for( i =320; i<512; i++)
     {
   if(len<=limit)
-        len += sprintf(buf+len, "\t%u\t%u\t%u\t%d\n", i, 
+        len += sprintf(buf+len, "\t%u\t%u\t%u\t%d\n", i,
                     (unsigned int)pIhw->AppData.BitAllocTblDstrm[i],
                     (unsigned int)pIhw->AppData.marginTblDstrm[i],
                     (int)pIhw->AppData.rxSnrPerBin0[i]);
@@ -1106,7 +1194,7 @@ int tn7dsl_proc_adv_stats3(char* buf, char **start, off_t offset, int count,
   for( i =320; i<512; i++)
   {
     if(len<=limit)
-      len += sprintf(buf+len, "\t%u\t%u\t%u\t%d\n", i, 
+      len += sprintf(buf+len, "\t%u\t%u\t%u\t%d\n", i,
                     (unsigned int)pIhw->AppData.BitAllocTblDstrm[i],
                     (unsigned int)pIhw->AppData.marginTblDstrm[i],
                     (i<pIhw->AppData.max_ds_tones)?(unsigned char)SNRpsds[i]:0);
@@ -1126,7 +1214,7 @@ int tn7dsl_proc_dbg_cmsgs(char* buf, char **start, off_t offset, int count,
   int limit = count - 80;
 
   int rc=0;
-  
+
   dslhal_api_gatherStatistics(pIhw);
 
   if(len<=limit)
@@ -1203,7 +1291,7 @@ int tn7dsl_proc_dbg_rmsgs1(char* buf, char **start, off_t offset, int count,
   int limit = count - 80;
 
   int rc=0;
-  
+
   dslhal_api_gatherStatistics(pIhw);
 
   if(len<=limit)
@@ -1256,7 +1344,7 @@ int tn7dsl_proc_dbg_rmsgs2(char* buf, char **start, off_t offset, int count,
   int limit = count - 80;
 
   int rc=0;
-  
+
   dslhal_api_gatherStatistics(pIhw);
 
   if(len<=limit)
@@ -1297,7 +1385,7 @@ int tn7dsl_proc_dbg_rmsgs3(char* buf, char **start, off_t offset, int count,
   int limit = count - 80;
 
   int rc=0;
-  
+
   dslhal_api_gatherStatistics(pIhw);
 
   if(len<=limit)
@@ -1337,7 +1425,7 @@ int tn7dsl_proc_dbg_rmsgs4(char* buf, char **start, off_t offset, int count,
   int limit = count - 80;
 
   int rc=0;
-  
+
   dslhal_api_gatherStatistics(pIhw);
 
   if(len<=limit)
@@ -1485,9 +1573,11 @@ int tn7dsl_proc_stats(char* buf, char **start, off_t offset, int count,
     }
     len +=
       sprintf (buf + len,
-               "\tUS Transmit Power :\t%u\tDS Transmit Power:\t%u\n",
-                   (unsigned int)pIhw->AppData.usTxPower/256,
-                   (unsigned int)pIhw->AppData.dsTxPower/256 );
+// UR8_MERGE_START - CQ11579 - Jeremy #1
+               "\tUS Transmit Power :\t%d\tDS Transmit Power:\t%d\n",
+                   pIhw->AppData.usTxPower/256,
+                   pIhw->AppData.dsTxPower/256 );
+// UR8_MERGE_END - CQ11579
   }
   /*
    * DSL Stats Errors
@@ -1496,7 +1586,7 @@ int tn7dsl_proc_stats(char* buf, char **start, off_t offset, int count,
     len += sprintf(buf+len, "\tLOS errors:\t\t%u\tSEF errors:\t\t%u\n",
                    (unsigned int)pIhw->AppData.LOS_errors,
                    (unsigned int)pIhw->AppData.SEF_errors );
-                   
+
   //UR8_MERGE_START Report_SES Manjula K
   //CQ10369
   if(len<=limit)
@@ -1504,7 +1594,7 @@ int tn7dsl_proc_stats(char* buf, char **start, off_t offset, int count,
                    (unsigned int)pIhw->AppData.erroredSeconds,
                    (unsigned int)pIhw->AppData.severelyerrsecs );
   //UR8_MERGE_END Report_SES
-                                    
+
   if(len<=limit)
     len += sprintf(buf+len, "\tFrame mode:\t\t%u\tMax Frame mode:\t\t%u\n",
                    (unsigned int)pIhw->AppData.FrmMode,
@@ -1530,7 +1620,9 @@ int tn7dsl_proc_stats(char* buf, char **start, off_t offset, int count,
                    (unsigned int)pIhw->AppData.currentHybridNum, trellis);
 
   //@Added Maximum attainable bit rate information. 05-14-2004
-  if(pIhw->AppData.dsl_modulation > 5)
+  // UR8_MERGE_START - CQ11579 - Jeremy
+  if((pIhw->AppData.dsl_modulation > 5) && (pIhw->AppData.dsl_modulation != 128))
+// UR8_MERGE_END - CQ11579 - Jeremy
   {
     tn7atm_memcpy(&maxRate, &pIhw->adsl2TrainingMessages.rParams[6],4);
     maxRate /= 1000;
@@ -1577,7 +1669,9 @@ int tn7dsl_proc_stats(char* buf, char **start, off_t offset, int count,
     tn7dsl_generic_read(2, (unsigned int *)&offset);
     usBitswap = dslReg & dslhal_support_byteSwap32(0x000000ff);
 
-    if(pIhw->AppData.dsl_modulation > 5)
+// UR8_MERGE_START - CQ11579 - Jeremy
+    if((pIhw->AppData.dsl_modulation > 5) && (pIhw->AppData.dsl_modulation != 128))
+// UR8_MERGE_END - CQ11579 - Jeremy
       len +=
         sprintf (buf + len,
                  "\tBitSwap:\t\t%u\tUS Max Attainable Bit Rate: %u bps\n",
@@ -1621,7 +1715,7 @@ int tn7dsl_proc_stats(char* buf, char **start, off_t offset, int count,
 
   if(len<=limit)
     len +=
-      sprintf (buf + len, "\tLast showtime init. errors: %ld\tLast showtime init. timeouts: %ld\n",
+      sprintf (buf + len, "\tLast showtime init. errors: %d\tLast showtime init. timeouts: %d\n",
              pIhw->AppData.lastshowInitErrs, pIhw->AppData.lastshowInitTOs);
 //  UR8_MERGE_END   CQ10979*
 
@@ -1670,6 +1764,14 @@ int tn7dsl_proc_stats(char* buf, char **start, off_t offset, int count,
       pIhw->AppData.t1413ATUR.t1413Revision,
       pIhw->AppData.t1413ATUR.VendorRevision);
   }
+
+#ifdef AR7_EFM
+  if (len <= limit)
+  {
+    len += sprintf(buf + len, "\tTC Mode: %s\n",
+      (priv->curr_TC_mode == TC_MODE_PTM) ? "PTM" : "ATM");
+  }
+#endif
 
 #endif
   /*
@@ -1743,7 +1845,7 @@ int tn7dsl_proc_stats(char* buf, char **start, off_t offset, int count,
                (unsigned int) pIhw->AppData.usAtm_count[1],
                (unsigned int) pIhw->AppData.usIdle_count[0] +
                (unsigned int) pIhw->AppData.usIdle_count[1]);
-//UR8_MERGE_START CQ10700 Manjula K  
+//UR8_MERGE_START CQ10700 Manjula K
   if (len <= limit)
     len +=
       sprintf (buf + len,
@@ -1769,15 +1871,15 @@ int tn7dsl_proc_stats(char* buf, char **start, off_t offset, int count,
     len += sprintf(buf+len, "\tOverflow Dropped Cell Cnt:\t%u\n",
                     (unsigned int) pIhw->AppData.dsOVFDrop_count[0] +
                     (unsigned int) pIhw->AppData.dsOVFDrop_count[1]);
-                    
- //UR8_MERGE_START CQ10700 Manjula K   
+
+ //UR8_MERGE_START CQ10700 Manjula K
   if (len <= limit)
     len +=
       sprintf (buf + len,
                "\tRx Packets Dropped Count:\t%lu\n\tRx Bad Packets Count:\t%lu\n\n",
                priv->stats.rx_dropped, priv->stats.rx_errors);
 //UR8_MERGE_END CQ10700
-    
+
   tn7sar_get_stats(pIhw->pOsContext);
   if(len<=limit)
     len += sprintf(buf+len, "\n[SAR AAL5 Stats]\n");
@@ -1811,7 +1913,7 @@ int tn7dsl_proc_stats(char* buf, char **start, off_t offset, int count,
                   oamFarLBCount[1] + oamFarLBCount[3]);
     }
 
-#define USE_OAM_DROP_COUNT   //CQ10273 
+#define USE_OAM_DROP_COUNT   //CQ10273
   //Read OAM ping responses count:
 #ifdef USE_OAM_DROP_COUNT
   if(len<=limit)
@@ -1832,10 +1934,11 @@ int tn7dsl_proc_stats(char* buf, char **start, off_t offset, int count,
 int tn7dsl_proc_modem(char* buf, char **start, off_t offset, int count,
                  int *eof, void *data)
 {
-
+#ifdef AR7_EFM
+extern int tn7efm_get_currTCmode(void);
+#endif
   int len = 0;
   int limit = count - 80;
-
   char *state;
   int tag;
 
@@ -1875,6 +1978,12 @@ int tn7dsl_proc_modem(char* buf, char **start, off_t offset, int count,
     len += sprintf(buf+len, "%d\n", dslReg);
   if(len<=limit)
     len += sprintf(buf+len, "failTrains=%d\n", pIhw->AppData.trainFails);
+
+#ifdef AR7_EFM
+  if (len<=limit)
+    len += sprintf(buf+len, "TCMODE=%s\n", 
+      tn7efm_get_currTCmode()== TC_MODE_PTM ? "EFM" : "ATM");
+#endif
 
   return len;
 }
@@ -2611,9 +2720,14 @@ inline int tn7dsl_handle_interrupt(void)
   unsigned char cMsgRa[6];
   short margin;
   extern unsigned int def_sar_inter_pace;   //Sorry
+#ifdef AR7_EFM
+  Tn7AtmPrivate *priv = (tn7atm_private_t *)mydev->dev_data;
+  extern void efm_pdsp_showtime_init(void);
+#else
 //UR8_MERGE_START CQ10450   Jack Zhang
   Tn7AtmPrivate *priv;
 //UR8_MERGE_END   CQ10450*
+#endif
 
   dgprintf(4, "tn7dsl_handle_dsl_interrupt()\n");
   if(pIhw)
@@ -2625,6 +2739,45 @@ inline int tn7dsl_handle_interrupt(void)
 
     dslhal_api_handleTrainingInterrupt(pIhw, intsrc);
 
+#ifdef AR7_EFM  
+    switch (pIhw->AppData.bState) {
+    case RSTATE_IDLE:
+      if (pIhw->AppData.CurrDslState == RSTATE_HS)
+      {
+        printk("DSL leave showtime\n");
+      }
+      break;
+    case RSTATE_SHOWTIME:
+      if (pIhw->AppData.CurrDslState == RSTATE_HS)
+      { // just entering SHOWTIME
+        printk("DSL ShowTime(%s)\n", (priv->curr_TC_mode==TC_MODE_PTM) ? "PTM" : "ATM");
+        efm_pdsp_showtime_init();
+        tn7efm_showtime_init();        
+      }
+      break;
+    default:
+      break;
+    }
+    pIhw->AppData.CurrDslState = pIhw->AppData.bState;
+#endif
+
+#ifdef AR7_EFM
+    if (pIhw->configFlag & CONFIG_FLAG_TC)
+    {
+      // Handle mode_switch as earlier than showtime as possible
+      // because of the latency. The exception is T1413, because it
+      // it doesn't have GHS. It can only be detected after showtime.
+      printk("TCMODE=%d(%s)\n", pIhw->ghs_TCmode, pIhw->ghs_TCmode==TC_MODE_PTM ? "PTM" : "ATM");      
+      
+      if (pIhw->ghs_TCmode != priv->curr_TC_mode)
+      {
+        priv->target_TC_mode = pIhw->ghs_TCmode;
+        tasklet_hi_schedule (&priv->tn7efm_tasklet);        
+      }
+      pIhw->configFlag &= ~CONFIG_FLAG_TC; // clear the flag
+    }
+#endif
+
     if(pIhw->lConnected == TC_SYNC)
     {
 
@@ -2634,10 +2787,26 @@ inline int tn7dsl_handle_interrupt(void)
         tn7atm_device_connect_status(pIhw->pOsContext, 1);
         dslhal_api_gatherStatistics(pIhw);
 
+#ifdef AR7_EFM
+        // Special care for T1413 to see if it need to switch mode.
+        // Can only be done after showtime because T1413 doesn't have GHS.
+        if ( (!pIhw->AppData.useBitField && (pIhw->AppData.TrainedMode==OLD_TRAINING_VAL_T1413))
+          || (pIhw->AppData.useBitField && (pIhw->AppData.TrainedMode==NEW_TRAINING_VAL_T1413)) )
+        {
+          if (priv->curr_TC_mode == TC_MODE_PTM)
+          {           
+            priv->target_TC_mode = TC_MODE_ATM;
+            tasklet_hi_schedule (&priv->tn7efm_tasklet);
+          }
+        }
+#endif
+
+#ifndef AR7_EFM
 //UR8_MERGE_START CQ10450   Jack Zhang
 //      priv = (Tn7AtmPrivate *)pIhw->pOsContext;
         priv = (tn7atm_private_t *)mydev->dev_data;
 //UR8_MERGE_END   CQ10450*
+#endif
 
 #if defined (CONFIG_LED_MODULE) || defined (CONFIG_MIPS_AVALANCHE_COLORED_LED)
         if(hnd_LED_0)
@@ -2669,14 +2838,14 @@ inline int tn7dsl_handle_interrupt(void)
 
 //UR8_MERGE_START CQ10639 Manjula K
        /* Setting Pacing rate to default if it was boosted earlier */
-       /* THE ASSUMPTION HERE IS DEFAULT INTERRUPT PACING VALUE STORED IN def_sar_inter_pace IS NOT ALTERED */         
+       /* THE ASSUMPTION HERE IS DEFAULT INTERRUPT PACING VALUE STORED IN def_sar_inter_pace IS NOT ALTERED */
         if(inter_pace_boosted)
-          {           
+          {
             inter_pace_boosted = 0;
             avalanche_request_intr_pacing(LNXINTNUM (ATM_SAR_INT),
                   ATM_SAR_INT_PACING_BLOCK_NUM, def_sar_inter_pace);
-            
-          }  
+
+          }
 //UR8_MERGE_END CQ10639
 
         }
@@ -2693,7 +2862,7 @@ inline int tn7dsl_handle_interrupt(void)
 //UR8_MERGE_START CQ10450   Jack Zhang
         else if( (inter_pace_boosted != HIGH_DS_CONN_RATE_PACEMAX_VAL) && (( priv->chip_id == CHIP_AR7O_212) || //UR8_MERGE_START_END CQ10442 Manjula K
                  (priv->chip_id == CHIP_AR7O_250_212)) && (pIhw->AppData.DSConRate > HIGH_DS_CONN_RATE_THRESHOLD)) //JZ: CQ10450
-          {           
+          {
             /* Higher Pacing rate is required for DS Conn rate > 20Mbps. */
             if(def_sar_inter_pace < HIGH_DS_CONN_RATE_PACEMAX_VAL)
             {
@@ -2710,14 +2879,14 @@ inline int tn7dsl_handle_interrupt(void)
        /* THE ASSUMPTION HERE IS DEFAULT INTERRUPT PACING VALUE STORED IN def_sar_inter_pace IS NOT ALTERED */
         else if((inter_pace_boosted)&& (pIhw->AppData.TrainedMode != ADSL2_PLUS_ANNEX_M)&&
                  (pIhw->AppData.DSConRate < HIGH_DS_CONN_RATE_THRESHOLD))
-          {           
+          {
               inter_pace_boosted = 0;
               avalanche_request_intr_pacing(LNXINTNUM (ATM_SAR_INT),
                   ATM_SAR_INT_PACING_BLOCK_NUM, def_sar_inter_pace);
-            
-          }  
-//UR8_MERGE_END CQ10639   
-            
+
+          }
+//UR8_MERGE_END CQ10639
+
       }
       dslInSync = 1;
     }
@@ -2737,7 +2906,10 @@ inline int tn7dsl_handle_interrupt(void)
         if(led_on != DEF_ADSL_IDLE)
         {
           if(hnd_LED_0)
+          {
+          	TN7DSL_LED_ACTION(hnd_LED_0, MOD_ADSL,0);       
             TN7DSL_LED_ACTION(hnd_LED_0, MOD_ADSL, DEF_ADSL_IDLE);
+          }
           led_on = DEF_ADSL_IDLE;
         }
       }
@@ -2746,7 +2918,10 @@ inline int tn7dsl_handle_interrupt(void)
         if(led_on != DEF_ADSL_TRAINING)
         {
           if(hnd_LED_0)
+          {
+          	TN7DSL_LED_ACTION(hnd_LED_0, MOD_ADSL,0);         
             TN7DSL_LED_ACTION(hnd_LED_0, MOD_ADSL, DEF_ADSL_TRAINING);
+          }
           led_on = DEF_ADSL_TRAINING;
         }
 
@@ -2760,12 +2935,12 @@ inline int tn7dsl_handle_interrupt(void)
     if (pIhw->AppData.SRA)
     {
       dgprintf(4, "SRA Occured! New DS Connection Rate:\t%u\n", pIhw->AppData.DSConRate );
-                  
+
       if (inter_pace_boosted == 0)
       {
         if( (( priv->chip_id == CHIP_AR7O_212) ||( priv->chip_id == CHIP_AR7O_250_212)) &&
-          (pIhw->AppData.DSConRate > HIGH_DS_CONN_RATE_THRESHOLD)) 
-          {           
+          (pIhw->AppData.DSConRate > HIGH_DS_CONN_RATE_THRESHOLD))
+          {
             /* Higher Pacing rate is required for DS Conn rate > 20Mbps. */
             if(def_sar_inter_pace < HIGH_DS_CONN_RATE_PACEMAX_VAL)
             {
@@ -2775,28 +2950,28 @@ inline int tn7dsl_handle_interrupt(void)
             }
           }
        }
- 
-    //UR8_MERGE_START CQ10639 Manjula K    
+
+    //UR8_MERGE_START CQ10639 Manjula K
       else
       {
        /* Setting Pacing rate to default when DS Conn rate < 20Mbps and not connected in AnnexM. */
        /* THE ASSUMPTION HERE IS DEFAULT INTERRUPT PACING VALUE STORED IN def_sar_inter_pace IS NOT ALTERED */
        if((pIhw->AppData.TrainedMode != ADSL2_PLUS_ANNEX_M) &&
-          (pIhw->AppData.DSConRate < HIGH_DS_CONN_RATE_THRESHOLD)) 
-          {           
+          (pIhw->AppData.DSConRate < HIGH_DS_CONN_RATE_THRESHOLD))
+          {
 
               inter_pace_boosted = 0;
               avalanche_request_intr_pacing(LNXINTNUM (ATM_SAR_INT),
                   ATM_SAR_INT_PACING_BLOCK_NUM, def_sar_inter_pace);
-            
+
           }
        }
     //UR8_MERGE_END CQ10639
-                            
+
       pIhw->AppData.SRA = 0;
-    } 
+    }
     //UR8_MERGE_END CQ10442
-    
+
     if (pIhw->AppData.clear_eoc)
     {
       tn7dsl_clear_eoc_receive();
@@ -2844,6 +3019,54 @@ static int tn7dsl_set_dsl(void)
   dslhal_api_dspInterfaceWrite (pIhw, (unsigned int) pIhw->pmainAddr, 2,
                                 (unsigned int *) &offset,
                                 (unsigned char *) &oamFeature, 4);
+	
+  ptr = prom_getenv("DSL_FEATURE_CNTL_0"); 
+  if(!ptr)
+    prom_setenv("DSL_FEATURE_CNTL_0", "0x00004000");
+
+  ptr = prom_getenv("DSL_FEATURE_CNTL_1"); 
+  if(!ptr)   
+	prom_setenv("DSL_FEATURE_CNTL_1", "0x00000000");
+
+  ptr = prom_getenv("DSL_PHY_CNTL_0"); 
+  if(!ptr)   
+	prom_setenv("DSL_PHY_CNTL_0", "0x00000400");
+	
+  ptr = prom_getenv("enable_margin_retrain"); 
+  if(!ptr)   
+	prom_setenv("enable_margin_retrain", "0");
+	
+  ptr = prom_getenv("modulation");
+  if(!ptr)
+    prom_setenv("modulation", "0xbf");
+  
+#define EOC_VENDOR_ID "4200534153000000"
+#define EOC_VENDOR_REVISION "FW370090708b1_55"
+#define EOC_VENDOR_SERIALNUM "ID937964FW370090708b1_55"
+    
+  ptr = prom_getenv("eoc_vendor_id");
+  if(!ptr || strcmp(ptr,EOC_VENDOR_ID) != 0 || strlen(ptr) != strlen(EOC_VENDOR_ID))
+  {
+      if(ptr)      	
+         prom_unsetenv("eoc_vendor_id");
+      prom_setenv("eoc_vendor_id",EOC_VENDOR_ID);
+  }
+      
+  ptr = prom_getenv("eoc_vendor_revision");
+  if(!ptr || strcmp(ptr,EOC_VENDOR_REVISION) != 0 || strlen(ptr) != strlen(EOC_VENDOR_REVISION))
+  {  
+      if(ptr)      	
+         prom_unsetenv("eoc_vendor_revision");
+      prom_setenv("eoc_vendor_revision",EOC_VENDOR_REVISION);
+  }
+      
+  ptr = prom_getenv("eoc_vendor_serialnum");
+  if(!ptr || strcmp(ptr,EOC_VENDOR_SERIALNUM) != 0 || strlen(ptr) != strlen(EOC_VENDOR_SERIALNUM))
+  {
+      if(ptr)      	
+         prom_unsetenv("eoc_vendor_serialnum");
+      prom_setenv("eoc_vendor_serialnum",EOC_VENDOR_SERIALNUM);
+  }
 
   /* Do only if we are in the new Base PSP 7.4.*/
   #if ((PSP_VERSION_MAJOR == 7) && (PSP_VERSION_MINOR == 4))
@@ -3003,10 +3226,10 @@ static int tn7dsl_set_dsl(void)
       //printk("tmp=%s--", tmp);
       //printk("ID[%d]=0x%02x ", i, (unsigned char)EOCVendorID[i]);
     }
-    //UR8_MERGE_START CQ10505 ManjulaK  
+    //UR8_MERGE_START CQ10505 ManjulaK
     //tn7dsl_get_dsp_version(dspVer);
     //printk("Annex =%d\n", dspVer[8]);
-    
+
     //if(dspVer[8]==2) // annex b
     //{
       // printk("EOCVendorID=%02x %02x %02x %02x %02x %02x %02x %02x\n",
@@ -3030,9 +3253,9 @@ static int tn7dsl_set_dsl(void)
   if(ptr)
   {
     dslhal_api_setEocSerialNumber(pIhw, ptr);
-  }  
-  
-  // CQ10037 Added invntry_vernum environment variable to be able to set version number in ADSL2, ADSL2+ modes.  
+  }
+
+  // CQ10037 Added invntry_vernum environment variable to be able to set version number in ADSL2, ADSL2+ modes.
   ptr = NULL;
   ptr = prom_getenv("invntry_vernum");
   if(ptr)
@@ -3061,7 +3284,7 @@ int tn7dsl_init(void *priv)
   int retVal = 0;
 
 //  UR8_MERGE_START CQ11054   Jack Zhang
-  int high_precision_selected = 0;  
+  int high_precision_selected = 0;
 //  UR8_MERGE_END   CQ11054*
 
   /*
@@ -3403,9 +3626,9 @@ unsigned int tn7dsl_get_memory(unsigned int addr_in)
 {
     volatile int *pUi;
     volatile int addr;
-    
+
     unsigned int ret;
-    
+
     addr = addr_in;
 
     pUi = (volatile int *)addr;
@@ -3513,7 +3736,7 @@ static int dslmod_sysctl(ctl_table *ctl, int write, struct file * filp,
 // * UR8_MERGE_START CQ10640   Jack Zhang
                 if (mod_req[0]=='d') //cph99
                   tn7dsl_dump_dsp_memory (&mod_req[1]);
-                else 
+                else
                   tn7dsl_dump_memory (&mod_req[1]);
 // * UR8_MERGE_END   CQ10640*
       break;
@@ -4392,14 +4615,14 @@ int tn7dsl_proc_write_stats (struct file *fp, const char *buf,
              sarStat.rxBytes = 0;
              sarStat.txErrors =0;
              sarStat.rxErrors =0;
-             
+
              //UR8_MERGE_START CQ10700 Manjula K
              priv->stats.tx_dropped = 0;
              priv->stats.tx_errors  = 0;
              priv->stats.rx_dropped = 0;
              priv->stats.rx_errors  = 0;
              //UR8_MERGE_END CQ10700
-             
+
 
         /* *INDENT-ON* */
         }
@@ -4687,7 +4910,7 @@ static int tn7dsl_proc_HLINpsdsIndx(char* buf, char **start, off_t offset, int c
       len += sprintf(buf+len, "\n[End of data]");
     return len;
   }
-  
+
   // call API instead of access internal buf directly
   if (dslhal_api_getHLINpsds(pIhw, (unsigned char *)HLINpsds, 1))
   {
@@ -4748,7 +4971,7 @@ int tn7dsl_proc_PMDus(char* buf, char **start, off_t offset, int count,int *eof,
   int limit = count - 80;
   int i;
   CoPMDTestParams_t  co_pmdtest_params;
-  
+
   if(len<=limit)
     len += sprintf(buf+len, "\nAR7 US PMD Test:\n");
 
@@ -4822,3 +5045,95 @@ int tn7dsl_proc_PMDus(char* buf, char **start, off_t offset, int count,int *eof,
 #endif //NO_ADV_STATS
 #endif //TR69_PMD_IN
 // *    UR8_MERGE_END   CQ11057 *
+//UR8_MERGE_START CQ11813 Hao-Ting Lin
+#ifdef LINUX_CLI_SUPPORT
+//*************************************************************
+//
+//  int tn7dsl_proc_dbgmsg_read(...)
+//
+//  DESCRIPTION: print the debug message from CLI redirect buffer
+//
+//**************************************************************
+int tn7dsl_proc_dbgmsg_read(char* buf, char **start, off_t offset, int count,int *eof, void *data)
+{
+   int len = 0;
+   int i;
+   unsigned int writePointer;
+   int delta;
+   int limit = count - 80;
+
+   if(pIhw->AppData.cliRedirect == 1)
+   {
+     writePointer = DSLHAL_REG32((unsigned int)(pIhw->AppData.p_cliBuffAddr + pIhw->AppData.cliBuffsize));
+     delta = writePointer - (pIhw->AppData.readPointer + 1);
+
+     if (delta < 0)
+       delta += pIhw->AppData.cliBuffsize;
+
+     for(i=0;i<delta;i++)
+     {
+       pIhw->AppData.readPointer++;
+       if (pIhw->AppData.readPointer == pIhw->AppData.cliBuffsize)
+          pIhw->AppData.readPointer = 0;
+       //since the debug message is already U8, we don't have to translate format using sprintf
+       //And it would save resources by doing so.
+       //len += sprintf(buf+len, "%c", pIhw->AppData.p_cliBuffAddr[pIhw->AppData.readPointer]);
+       if(len <= limit)
+       {
+         len++;
+         buf[i] = pIhw->AppData.p_cliBuffAddr[pIhw->AppData.readPointer];
+       }
+     }
+   }
+   return len;
+}
+
+//*************************************************************
+//
+//  int tn7dsl_proc_dbgmsg_write(...)
+//
+//  DESCRIPTION: Enable/Disable CLI redirect
+//
+//**************************************************************
+int tn7dsl_proc_dbgmsg_write(struct file *fp, const char *buf, unsigned long count, void *data)
+{
+    char local_buf[10];
+    int  ret_val = 0;
+    struct atm_dev *dev;
+    Tn7AtmPrivate *priv;
+
+    dev = (struct atm_dev *)data;
+    priv = (Tn7AtmPrivate *)dev->dev_data;
+    ret_val = count;
+
+    copy_from_user(local_buf,buf,count);
+
+    if(strcmp("0",local_buf)==0)
+    {
+       printk("\nDISABLE debug message redirect\n");
+       if(pIhw->AppData.cliRedirect == 1)
+       {
+         dslhal_api_redirectMode(pIhw, 0);
+         dslhal_api_redirectFree(pIhw);
+       }
+    }
+    else if(strcmp("1",local_buf)==0)
+    {
+       printk("\nENABLE debug message redirect\n");
+       if(pIhw->AppData.cliRedirect == 0)
+       {
+         dslhal_api_redirectInit(pIhw);
+         dslhal_api_redirectMode(pIhw, 1);
+       }
+    }
+    else
+    {
+       printk("\nError: Unknown operation\n");
+       printk("use echo x > avsar_dbg_enable\n");
+       printk("0: disable, 1: enable");
+    }
+
+    return ret_val;
+}
+#endif
+//UR8_MERGE_END CQ11813 Hao-Ting Lin

@@ -41,7 +41,7 @@
  *   12/07/05 AV      Added a check in the tn7atm_init() to verify that the dslhal_api_boostDspFrequency()
  *                    was able to boost the frequency of the DSP and SAR.
  *   01/25/06  JZ     CQ: 10273 Aztech/Singtel oam pvc management issue, new PDSP 0.54
- *   01/25/06  JZ     CQ: 10275 Add Remote Data Log code. Search ADV_DIAG_STATS in ATM  
+ *   01/25/06  JZ     CQ: 10275 Add Remote Data Log code. Search ADV_DIAG_STATS in ATM
  *                    driver code and manually turn on it for enabling the feature
  *   02/04/06 CPH     CQ10280: Add DSL_PHY_CNTL_0 and DSL_PHY_CNTL_1 support
  *    UR8_MERGE_START CQ10450   Jack Zhang
@@ -59,6 +59,11 @@
  *    UR8_MERGE_START CQ11057   Jack Zhang
  *    11/03/06 JZ     CQ11057: Request US PMD test parameters from CO side
  *    UR8_MERGE_END   CQ11057*
+ *    UR8_MERGE_START CQ11813  Hao-Ting Lin
+ *    06/08/07 Hao-Ting CQ11813: CLI redirect support in Linux
+ *                               Add read and init funciton for Cli redirect
+ *    UR8_MERGE_END   CQ11813
+ *    09/18/07 CPH    CQ11466  Added EFM Support
 *********************************************************************************************/
 
 #include <linux/config.h>
@@ -75,6 +80,9 @@
 #include <linux/string.h>
 #include <linux/ctype.h>
 #include "dsl_hal_api.h"
+#ifdef AR7_EFM
+#include "tn7efm.h"
+#endif
 #include "tn7atm.h"
 #include "tn7api.h"
 #include "version.h"
@@ -106,9 +114,22 @@ MODULE_AUTHOR ("Zhicheng Tang");
 
 #define tn7atm_kfree_skb(x)     dev_kfree_skb(x)
 
+#ifdef AR7_EFM
+extern void tn7dsl_disable_alarm(void);
+extern int tn7efm_proc_channels (char *buf, char **start, 
+            off_t offset, int count, int *eof, void *data);
+extern int tn7efm_proc_ctrl_read (char *buf, char **start, off_t offset, int count, int *eof, void *data);
+extern int tn7efm_proc_ctrl_write (struct file *fp, const char *buf, unsigned long count, void *data);
+extern int tn7efm_proc_info (char *buf, char **start, off_t offset, int count, int *eof, void *data);
+extern unsigned int g_efm_proc_ctl;
+extern struct net_device *mydev_efm;
+extern Tn7AtmPrivate *mypriv;
+#endif
+
 extern unsigned int SAR_FREQUNCY;
 
 static int CanSuppADSL2 = TRUE;
+
 static int EnableQoS = FALSE;
 
 /* prototypes */
@@ -116,7 +137,7 @@ static int tn7atm_set_can_support_adsl2 (int can);
 
 static int tn7atm_open (struct atm_vcc *vcc, short vpi, int vci);
 
-static void tn7atm_close (struct atm_vcc *vcc);
+void tn7atm_close (struct atm_vcc *vcc);
 
 static int tn7atm_ioctl (struct atm_dev *dev, unsigned int cmd, void *arg);
 
@@ -127,7 +148,14 @@ static int tn7atm_change_qos (struct atm_vcc *vcc, struct atm_qos *qos,
 
 static int tn7atm_detect (void);
 static int tn7atm_init (struct atm_dev *dev);
+
+#ifdef AR7_EFM
+int tn7atm_irq_request (struct atm_dev *dev);
+extern int tn7efm_register (Tn7AtmPrivate * priv);
+#else
 static int tn7atm_irq_request (struct atm_dev *dev);
+#endif
+
 static int tn7atm_proc_version (char *buf, char **start, off_t offset,
                                 int count, int *eof, void *data);
 static void tn7atm_exit (void);
@@ -146,6 +174,12 @@ static int tn7atm_proc_match (int len, const char *name,
 static int tn7atm_proc_qos_read  (char *buf, char **start, off_t offset,
                                   int count, int *eof, void *data);
 static int tn7atm_proc_qos_write (struct file *fp, const char *buf,
+                                  unsigned long count, void *data);
+
+// [KT]
+static int tn7atm_proc_turbodsl_read  (char *buf, char **start, off_t offset,
+                                  int count, int *eof, void *data);
+static int tn7atm_proc_turbodsl_write (struct file *fp, const char *buf,
                                   unsigned long count, void *data);
 
 //CT - Added function to return chipset Id
@@ -249,6 +283,13 @@ void tn7atm_handle_tasklet (unsigned long data);
 struct tasklet_struct tn7atm_tasklet;
 #endif
 
+#ifdef AR7_EFM
+void tn7efm_handle_autoswitch_tasklet (unsigned long data);
+extern unsigned int _dsl_PhyControl_0_defined;
+extern unsigned int _dsl_PhyControl_0;
+#endif
+
+
 /* *INDENT-OFF* */
 static const struct atmdev_ops tn7atm_ops = {
         open:           tn7atm_open,
@@ -274,6 +315,13 @@ static struct
     int (*write_func) (struct file *, const char * , unsigned long , void *);
 
 } proc_if[] = {
+#ifdef AR7_EFM
+#ifdef EFM_DEBUG
+    {"avsar_efm_channel",           tn7efm_proc_channels,          NULL},
+#endif    
+    {"avsar_efm_info",              tn7efm_proc_info,              NULL},
+    {"avsar_efm_ctl",               tn7efm_proc_ctrl_read,  tn7efm_proc_ctrl_write},
+#endif
     {"avsar_ver",                   tn7atm_proc_version,           NULL},
     {"avsar_channels",              tn7atm_proc_channels,          NULL},
     {"avsar_sarhal_stats",          tn7sar_proc_sar_stat,          NULL},
@@ -323,7 +371,15 @@ static struct
     {"avsar_modem_dbg_rmsgs4",      tn7dsl_proc_dbg_rmsgs4,        NULL},
 // UR8_MERGE_END   CQ10682*
 #endif //ADV_DIAG_STATS
-    {"avsar_qos_enable",            tn7atm_proc_qos_read,          tn7atm_proc_qos_write}
+//UR8_MERGE_START CQ11813 Hao-Ting
+#ifdef LINUX_CLI_SUPPORT
+    {"avsar_dbg_enable",            tn7dsl_proc_dbgmsg_read,       tn7dsl_proc_dbgmsg_write},
+#endif
+//UR8_MERGE_END CQ11813
+    {"avsar_qos_enable",            tn7atm_proc_qos_read,          tn7atm_proc_qos_write},
+    #if 1 /* [MS] */
+    {"avsar_turbodsl",              tn7atm_proc_turbodsl_read,     tn7atm_proc_turbodsl_write}
+    #endif
 };
 
 /* *INDENT-ON* */
@@ -332,6 +388,9 @@ static unsigned int ATM_DSL_INT;
 unsigned int def_sar_inter_pace;
 
 int __guDbgLevel = 0;
+
+//[MS]
+static int bTurboDsl = 1;
 
 //static spinlock_t chan_init_lock;
 
@@ -513,7 +572,11 @@ static int turbodsl_check_priority_type(unsigned char *pData)
       pP +=2;                 //skip ether type
       if(etherType == 0x6488)
         {
+        #if 1 /* [MS] PPPoE header + PPP header = 8 bytes */
+        pP += 8;
+        #else
         pP += 6;
+        #endif
         }
       break;
     case AAL5_ENCAP_RFC2684_LLC_ROUTED:
@@ -551,7 +614,11 @@ static int turbodsl_check_priority_type(unsigned char *pData)
   /*** Viren: not required ***/
   /*ip_length = ((pIp->total_length>>8) + (pIp->total_length<<8));*/
 
+  #if 1 /* [MS] */
+  if((pTcp->flags & ACK_FLAG) && (((unsigned short)(pIp->total_length>>8) + (unsigned short)(pIp->total_length<<8)) <=40))
+  #else
   if((pTcp->flags & ACK_FLAG) && (((pIp->total_length>>8) + (pIp->total_length<<8)) <=40))
+  #endif
     return 0;
 
   return 1;
@@ -681,10 +748,14 @@ static void tn7atm_dsl_irq (int irq, void *voiddev, struct pt_regs *regs)
  *  Description: Initialize Interrupt handler
  *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+#ifdef AR7_EFM
+int tn7atm_irq_request (struct atm_dev *dev)
+#else 
 static int __init tn7atm_irq_request (struct atm_dev *dev)
+#endif
 {
   Tn7AtmPrivate *priv;
-  char *ptr;
+  char *ptr;  
 
   dgprintf (4, "tn7atm_irq_request()\n");
   priv = (Tn7AtmPrivate *) dev->dev_data;
@@ -692,7 +763,9 @@ static int __init tn7atm_irq_request (struct atm_dev *dev)
   /*
    * Register SAR interrupt
    */
+
   priv->sar_irq = LNXINTNUM (ATM_SAR_INT);      /* Interrupt line # */
+
   if (request_irq (priv->sar_irq, tn7atm_sar_irq, SA_INTERRUPT, "SAR ", dev))
     printk ("Could not register tn7atm_sar_irq\n");
 
@@ -707,6 +780,12 @@ static int __init tn7atm_irq_request (struct atm_dev *dev)
   avalanche_request_pacing (priv->sar_irq, ATM_SAR_INT_PACING_BLOCK_NUM,
                             def_sar_inter_pace);
 
+
+#ifdef AR7_EFM
+  if (priv->mode_switching)
+    return 0; // skip following
+#endif
+
   /*
    * Reigster Receive interrupt A
    */
@@ -720,9 +799,13 @@ static int __init tn7atm_irq_request (struct atm_dev *dev)
 #endif
 /***************/
 
+#ifdef AR7_EFM
+  tasklet_init (&priv->tn7efm_tasklet, tn7efm_handle_autoswitch_tasklet, (unsigned long) dev);
+#endif
 
   return 0;
 }
+
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *
@@ -842,7 +925,7 @@ static int __init tn7atm_get_ESI (struct atm_dev *dev)
   char esi_addr[ESI_LEN] = { 0x00, 0x00, 0x11, 0x22, 0x33, 0x44 };
   char *esiaddr_str = NULL;
 
-  esiaddr_str = prom_getenv ("maca");
+  esiaddr_str = prom_getenv ("macc");
 
   if (!esiaddr_str)
   {
@@ -1295,7 +1378,22 @@ inline static int tn7atm_queue_packet_to_sar (void *vcc1, void *skb1,
   dgprintf (4, "vcc->vci=%d\n", vcc->vci);
 
   // turbo dsl TCP ack check
-  if (priv->bTurboDsl)
+  #if  1 /* [MS] */
+  if(bTurboDsl)
+  {
+    priority = turbodsl_check_priority_type (skb->data);
+    if(priority != 0)
+    	priority = 1;
+  }
+  else
+  {
+    if ((skb->cb[47]) >> 1)
+      priority = 1;
+    else
+      priority = 0;
+  }
+  #else
+  if(bTurboDsl)
     priority = turbodsl_check_priority_type (skb->data);
 
   // skb priority check
@@ -1306,6 +1404,7 @@ inline static int tn7atm_queue_packet_to_sar (void *vcc1, void *skb1,
     else
       priority = 0;
   }
+  #endif
 
   /*
    * PANKAJ: Once a packet has been passed down to the HAL layers we need to
@@ -1331,7 +1430,7 @@ inline static int tn7atm_queue_packet_to_sar (void *vcc1, void *skb1,
      */
     if ((skb->dev != NULL) && (EnableQoS))
          netif_wake_queue(skb->dev);
-         
+
     priv->stats.tx_dropped++; //UR8_MERGE_START_END CQ10700 Manjula K
 
     return 1;
@@ -1348,6 +1447,7 @@ int tn7atm_send_complete (void *osSendInfo)
   struct sk_buff *skb;
   struct atm_vcc *vcc;
   static unsigned int ledticks;
+  struct net_device *skb_dev;
 
   dgprintf (4, "tn7atm_send_complete()\n");
 #ifdef TIATM_INST_SUPP
@@ -1357,6 +1457,7 @@ int tn7atm_send_complete (void *osSendInfo)
   skb = (struct sk_buff *) osSendInfo;
   priv = (Tn7AtmPrivate *) mydev->dev_data;
   vcc = ATM_SKB (skb)->vcc;
+  skb_dev = skb->dev;  //cph
   if (vcc)
   {
     dgprintf (4, "vcc->vci=%d\n", vcc->vci);
@@ -1366,7 +1467,8 @@ int tn7atm_send_complete (void *osSendInfo)
       dgprintf (5, "free packet\n");
       vcc->pop (vcc, skb);
     }
-
+    else
+      dev_kfree_skb_any(skb); //cph
   }
 
   /*
@@ -1394,8 +1496,8 @@ int tn7atm_send_complete (void *osSendInfo)
    * acknowledged the SAR driver is free to take another packet for
    * transmission.
    */
-  if (skb->dev != NULL)
-    netif_wake_queue (skb->dev);
+  if (skb_dev != NULL)
+    netif_wake_queue (skb_dev);
 
 #ifdef TIATM_INST_SUPP
   psp_trace_par (ATM_DRV_PKT_TX_COMPLETE_EXIT, skb->len);
@@ -1600,6 +1702,7 @@ int tn7atm_receive (void *os_dev, int ch, unsigned int packet_size,
   return 0;
 }
 
+
 static int tn7atm_proc_channels (char *buf, char **start, off_t offset,
                                  int count, int *eof, void *data)
 {
@@ -1677,11 +1780,23 @@ void tn7atm_sarhal_isr_register (void *os_dev, void *hal_isr,
 
   dgprintf (4, "tn7atm_sarhal_isr_register()\n");
 
+#ifdef AR7_EFM     
+  if (mypriv->curr_TC_mode == TC_MODE_PTM)
+  {        
+    struct net_device *dev_efm;
+    dev_efm = (struct net_device *) os_dev;            
+    priv = (Tn7AtmPrivate *) dev_efm->priv;    
+  }    
+  else
+  {
+#endif
   dev = (struct atm_dev *) os_dev;
   priv = (Tn7AtmPrivate *) dev->dev_data;
+#ifdef AR7_EFM
+  }
+#endif
   priv->halIsr = (void *) hal_isr;
   priv->int_num = interrupt_num;
-
 
 }
 
@@ -1708,20 +1823,34 @@ static void tn7atm_exit (void)
   priv = (Tn7AtmPrivate *) dev->dev_data;
   priv->lConnected = 0;
 
-/***** VRB ****/
-#ifdef CPATM_TASKLET_MODE
-  tasklet_kill (&tn7atm_tasklet);
+#ifdef AR7_EFM
+  tasklet_kill (&priv->tn7efm_tasklet);
 #endif
-/******    ****/
+
   tn7dsl_exit ();
 
   tn7sar_exit (dev, priv);
+
+#ifdef AR7_EFM
+  if (priv->efm_ctl) // efm_ctl: 1= normal EFM, 0=ATM (default)  
+    tn7efm_exit();
+#endif
 
   /*
    * freeup irq's
    */
   free_irq (priv->dsl_irq, priv->dev);
-  free_irq (priv->sar_irq, priv->dev);
+
+#ifdef AR7_EFM
+  if (priv->sar_irq)
+  { 
+printk("!!!free atm irq: tn7atm_exit\n");     
+    free_irq (priv->sar_irq, priv->dev);    
+    priv->sar_irq = 0;
+  }  
+#else
+  free_irq (priv->sar_irq, priv->dev);    
+#endif    
 
   kfree (dev->dev_data);
 
@@ -1760,7 +1889,11 @@ static void tn7atm_exit (void)
  *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+#ifdef AR7_EFM
 static int __init tn7atm_register (Tn7AtmPrivate * priv)
+#else
+static int __init tn7atm_register (Tn7AtmPrivate * priv)
+#endif
 {
   /*
    * allocate memory for the device
@@ -1799,13 +1932,24 @@ static int tn7atm_proc_version (char *buf, char **start, off_t offset,
   Tn7AtmPrivate *priv;
   int i;
   unsigned int pdspV1, pdspV2;
+#ifdef AR7_EFM
+  char *str;
+#endif
 
   priv = mydev->dev_data;
 
+#ifdef AR7_EFM
+  len +=
+    sprintf (buf + len, "ATM/EFM Driver version:[%d.%02d.%02d.%02d]\n",
+             LINUXATM_VERSION_MAJOR, LINUXATM_VERSION_MINOR,
+             LINUXATM_VERSION_BUGFIX, LINUXATM_VERSION_BUILDNUM);
+
+#else
   len +=
     sprintf (buf + len, "ATM Driver version:[%d.%02d.%02d.%02d]\n",
              LINUXATM_VERSION_MAJOR, LINUXATM_VERSION_MINOR,
              LINUXATM_VERSION_BUGFIX, LINUXATM_VERSION_BUILDNUM);
+#endif
 
   tn7dsl_get_dslhal_version (dslVer);
 
@@ -1814,9 +1958,15 @@ static int tn7atm_proc_version (char *buf, char **start, off_t offset,
              dslVer[1], dslVer[2], dslVer[3]);
   tn7dsl_get_dsp_version (dspVer);
 
+#ifdef EFM_DEBUG
+  len +=
+    sprintf (buf + len, "DSP Datapump version: [%d.%02d.%02d.%02d(%u)] ",
+             dspVer[4], dspVer[5], dspVer[6], dspVer[7], (unsigned char) dspVer[7]);
+#else
   len +=
     sprintf (buf + len, "DSP Datapump version: [%d.%02d.%02d.%02d] ",
              dspVer[4], dspVer[5], dspVer[6], dspVer[7]);
+#endif
   if (dspVer[8] == 2)           // annex B
     len += sprintf (buf + len, "Annex B\n");
   else if (dspVer[8] == 3)      // annex c
@@ -1834,8 +1984,28 @@ static int tn7atm_proc_version (char *buf, char **start, off_t offset,
   len += sprintf (buf + len, "]\n");
 
   tn7sar_get_sar_firmware_version (&pdspV1, &pdspV2);
+
+#ifndef AR7_EFM
   len += sprintf (buf + len, "PDSP Firmware version:[%01x.%02x]\n",
                   pdspV1, pdspV2);
+#else
+
+  len += sprintf (buf + len, "PDSP Firmware version:[%01x.%02x](ATM)%c\n",
+            pdspV1, pdspV2, (priv->curr_TC_mode== TC_MODE_ATM) ? '*' : ' ');
+
+  tn7sar_get_EFM_firmware_version (&pdspV1, &pdspV2);
+  
+#ifdef EFM_DEBUG    
+  if (priv->EFM_mode & 0x04)
+    str = "LB";
+  else
+#endif
+    str = "EFM";  
+
+  len += sprintf (buf + len, "PDSP Firmware version:[%01x.%02x](%s)%c\n",
+            pdspV1, pdspV2, str, (priv->curr_TC_mode== TC_MODE_PTM) ? '*' : ' ');
+
+#endif
 
   //CT CQ10076 - Added code to report chipset ID using proc file system
   tn7atm_get_chipsetId(chipsetID);
@@ -1873,6 +2043,10 @@ static int __init tn7atm_detect (void)
   priv->name = "TI Avalanche SAR";
   priv->proc_name = "avsar";
 
+#ifdef AR7_EFM
+  mypriv = priv; // save it !!
+#endif
+
   if ((tn7atm_register (priv)) == ATM_REG_FAILED)
     return -ENODEV;
 
@@ -1881,10 +2055,37 @@ static int __init tn7atm_detect (void)
     printk ("Error : Failed to Initialize the DSL subsystem !!.\n");
     return -ENODEV;
   }
+  
+
+#ifdef AR7_EFM
+  tn7efm_initenv (); // read env vars: EFM_CTL, EFM_PROC_CTL, etc.
+  
+  if (!priv->efm_dev) 
+  {
+    if ((tn7efm_register(priv)) == EFM_REG_FAILED)
+      return -ENODEV;
+  }  
+    
+  if (_dsl_PhyControl_0_defined && 
+    (_dsl_PhyControl_0 & (OAMFEATURE_PHY_ENABLE_PTM_PREFERED|OAMFEATURE_PHY_ENABLE_FORCE_PTM)) )
+  {       
+    // PTM is the preferred mode
+    priv->target_TC_mode = TC_MODE_PTM;
+    tn7efm_handle_autoswitch_tasklet(0);
+  }
+  else
+  {
+    // set preferred TC mode to ATM
+    priv->target_TC_mode = TC_MODE_ATM;
+  }
+#endif // AR7_EFM
+
+
 
   /*
    * Set up proc entry for atm stats
    */
+
   if (tn7atm_xlate_proc_name
       (drv_proc_root_folder, &root_proc_dir_entry, &residual))
   {
@@ -1898,6 +2099,7 @@ static int __init tn7atm_detect (void)
     }
     proc_root_already_exists = FALSE;
   }
+
 
   /*
    * AV: Clean-up. Moved all the definitions to the data structure.
@@ -1926,9 +2128,16 @@ static int __init tn7atm_detect (void)
 
   tn7dsl_dslmod_sysctl_register ();
 
+#ifdef AR7_EFM
+  printk ("Texas Instruments ATM/EFM driver: version:[%d.%02d.%02d.%02d]\n",
+          LINUXATM_VERSION_MAJOR, LINUXATM_VERSION_MINOR,
+          LINUXATM_VERSION_BUGFIX, LINUXATM_VERSION_BUILDNUM);
+
+#else
   printk ("Texas Instruments ATM driver: version:[%d.%02d.%02d.%02d]\n",
           LINUXATM_VERSION_MAJOR, LINUXATM_VERSION_MINOR,
           LINUXATM_VERSION_BUGFIX, LINUXATM_VERSION_BUILDNUM);
+#endif
   return 0;
 }
 
@@ -2116,7 +2325,7 @@ void tn7atm_get_chipsetId (char *pVerId)
   unsigned int reg_DIDR2;
   unsigned int chip_id;
   unsigned int TrimRegVal;
-  
+
 //UR8_MERGE_START CQ10450   Jack Zhang
   Tn7AtmPrivate *priv = (tn7atm_private_t *)mydev->dev_data;
 //UR8_MERGE_END   CQ10450*
@@ -2240,19 +2449,13 @@ static int __init tn7atm_init (struct atm_dev *dev)
   // dslhal_api_dslStartup (in tn7dsl_init()).
   if ((ptr = prom_getenv ("DSL_FEATURE_CNTL_0")) != NULL)
   {
-    if ((ptr[0] == '0') && (ptr[1] == 'x'))     // skip 0x before pass to
-      // os_atoh
-      ptr += 2;
-    _dsl_Feature_0 = os_atoh (ptr);
+    _dsl_Feature_0 = os_atoih (ptr);
     _dsl_Feature_0_defined = 1;
   }
 
   if ((ptr = prom_getenv ("DSL_FEATURE_CNTL_1")) != NULL)
   {
-    if ((ptr[0] == '0') && (ptr[1] == 'x'))     // skip 0x before pass to
-      // os_atoh
-      ptr += 2;
-    _dsl_Feature_1 = os_atoh (ptr);
+    _dsl_Feature_1 = os_atoih (ptr);
     _dsl_Feature_1_defined = 1;
   }
 
@@ -2262,19 +2465,13 @@ static int __init tn7atm_init (struct atm_dev *dev)
   // dslhal_api_dslStartup (in tn7dsl_init()).
   if ((ptr = prom_getenv ("DSL_PHY_CNTL_0")) != NULL)
   {
-    if ((ptr[0] == '0') && (ptr[1] == 'x'))     // skip 0x before pass to
-      // os_atoh
-      ptr += 2;
-    _dsl_PhyControl_0 = os_atoh (ptr);
+    _dsl_PhyControl_0 = os_atoih (ptr);
     _dsl_PhyControl_0_defined = 1;
   }
 
   if ((ptr = prom_getenv ("DSL_PHY_CNTL_1")) != NULL)
   {
-    if ((ptr[0] == '0') && (ptr[1] == 'x'))     // skip 0x before pass to
-      // os_atoh
-      ptr += 2;
-    _dsl_PhyControl_1 = os_atoh (ptr);
+    _dsl_PhyControl_1 = os_atoih (ptr);
     _dsl_PhyControl_1_defined = 1;
   }
 
@@ -2285,23 +2482,28 @@ static int __init tn7atm_init (struct atm_dev *dev)
     return -ENODEV;
   }
 
-//cph99
-//printk("ptr=%s\n", ptr);
-
-
   if (tn7atm_get_ESI (dev) < 0) /* set ESI */
     return -ENODEV;
 
   if (tn7atm_irq_request (dev) < 0)
     return -EBUSY;
 
-  priv->bTurboDsl = 1;
   // read config for turbo dsl
+   
   ptr = prom_getenv ("TurboDSL");
   if (ptr)
   {
+    #if 1 //[KT]
+    bTurboDsl = os_atoi (ptr);
+    #else
     priv->bTurboDsl = os_atoi (ptr);
+    #endif
   }
+   else
+   {
+    bTurboDsl =1; 
+   }
+   
 
   // @Added to make Rx buffer number & Service max configurable through
   // environment variable.
@@ -2312,6 +2514,7 @@ static int __init tn7atm_init (struct atm_dev *dev)
   {
     priv->sarRxBuf = os_atoi (ptr);
   }
+
   priv->sarRxMax = RX_SERVICE_MAX;
   ptr = NULL;
   ptr = prom_getenv ("SarRxMax");
@@ -2319,6 +2522,7 @@ static int __init tn7atm_init (struct atm_dev *dev)
   {
     priv->sarRxMax = os_atoi (ptr);
   }
+
   priv->sarTxBuf = TX_BUFFER_NUM;
   ptr = NULL;
   ptr = prom_getenv ("SarTxBuf");
@@ -2326,6 +2530,7 @@ static int __init tn7atm_init (struct atm_dev *dev)
   {
     priv->sarTxBuf = os_atoi (ptr);
   }
+
   priv->sarTxMax = TX_SERVICE_MAX;
   ptr = NULL;
   ptr = prom_getenv ("SarTxMax");
@@ -2334,9 +2539,14 @@ static int __init tn7atm_init (struct atm_dev *dev)
     priv->sarTxMax = os_atoi (ptr);
   }
 
+#ifdef AR7_EFM
+  priv->curr_TC_mode = TC_MODE_ATM;
+#endif
+
   return 0;
 }
 
+// This routine used for both ATM&EFM
 int tn7atm_device_connect_status (void *priv, int state)
 {
   Tn7AtmPrivate *priv1;
@@ -2448,6 +2658,16 @@ static int tn7atm_proc_qos_read(char *buf, char **start, off_t offset, int count
     return len;
 
 }
+
+// [KT]
+static int tn7atm_proc_turbodsl_read(char *buf, char **start, off_t offset, int count, int *eof, void *data)
+{
+    int len = 0;
+
+    len += sprintf (buf + len, "%d\n", bTurboDsl);
+    return len;
+}
+
 static int tn7atm_proc_qos_write(struct file *fp, const char *buf, unsigned long count, void *data)
 {
     char local_buf[32];
@@ -2475,6 +2695,38 @@ static int tn7atm_proc_qos_write(struct file *fp, const char *buf, unsigned long
             printk("Use \"echo 1 > avsar_qos_enable\" to enable the QoS\n");
             printk("\nOR\nUse \"echo 0 > avsar_qos_enable\" to disable the QoS\n");
             return -1;
+    }
+    return count;
+}
+
+// [KT]
+int tn7atm_proc_turbodsl_write(struct file *fp, const char *buf, unsigned long count, void *data)
+{
+    char local_buf[10];
+ 
+    if(count > 9)
+    {
+        printk("tn7atm_proc_turbodsl_write \n");
+        printk("Error : Buffer Overflow\n");
+        return -1;
+     }
+
+    copy_from_user(local_buf,buf,count);
+
+    if(local_buf[count - 1] =='\n')
+        local_buf[count - 1] ='\0'; /* Ignoring last \n char */
+
+    if(strcmp("0",local_buf)==0)
+    {
+       bTurboDsl =0; 
+    }
+    else if(strcmp("1",local_buf)==0)
+    {
+       bTurboDsl =1; 
+    }
+    else
+    {
+       bTurboDsl =1; 
     }
     return count;
 }

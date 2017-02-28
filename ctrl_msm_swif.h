@@ -141,6 +141,9 @@
 // UR8_MERGE_START CQ11021 Hao-Ting Lin
 //                       Add define used in COMLAB fix
 // UR8_MERGE_END CQ11021 Hao-Ting Lin
+// UR8_MERGE_START monitored_tones MB
+// 6/20/06 Mark Bryan      CQ11745: Added defintion's CONSTSHIFT, CONSTPOINT, and structure FeqStr used in the data and synch symbol FEQ's.
+// UR8_MERGE_END monitored_tones
 // *******************************************************************************************
 
 
@@ -554,5 +557,21 @@ typedef struct {
   } scaleType;
 
 // ML CQ9583 remove stringtable enum
+
+// UR8_MERGE_START monitored_tones MB
+//CQ11745
+#define CONSTSHIFT 14
+#define CONSTPOINT (1<<CONSTSHIFT)
+
+#pragma STRUCT_ALIGN (FeqStr, 4)
+typedef struct {
+  UINT8 synchmu1;
+  UINT8 synchmu2;
+  UINT8 alpha_shift1;
+  UINT8 alpha_shift2;
+} FeqStr;
+// UR8_MERGE_END monitored_tones
+
+
 
 #endif //__CTRL_MSM_SWIF_H__

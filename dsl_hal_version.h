@@ -109,14 +109,14 @@
 
 /* Dsl Hal API Version Numbers */
 #define DSLHAL_VERSION_MAJOR       07
-#define DSLHAL_VERSION_MINOR       03
+#define DSLHAL_VERSION_MINOR       05
 #define DSLHAL_VERSION_BUGFIX      01
 #define DSLHAL_VERSION_BUILDNUM    00
 #define DSLHAL_VERSION_TIMESTAMP   03
 
 /* dhalapp Adam2 Application Version Numbers */
 #define DHALAPP_VERSION_MAJOR      07
-#define DHALAPP_VERSION_MINOR      03
+#define DHALAPP_VERSION_MINOR      05
 #define DHALAPP_VERSION_BUGFIX     01
 #define DHALAPP_VERSION_BUILDNUM   00
 

@@ -40,6 +40,7 @@
  * UR8_MERGE_START CQ10700 Manjula K
  * 07/24/06 MK    CQ10700: Added counter for reporting packets dropped by ATM Driver/SAR
  * UR8_MERGE_END CQ10700
+ * 09/18/07 CPH   CQ11466: Added EFM support.
  *******************************************************************************/
 
 #include <linux/config.h>
@@ -66,6 +67,11 @@ typedef void OS_SENDINFO;
 typedef void OS_RECEIVEINFO;
 typedef void OS_SETUP;
 
+
+#ifdef AR7_EFM
+#include "tn7efm.h"
+#endif
+
 #include "cpswhal_cpsar.h"
 #include "tn7atm.h"
 #include "tn7api.h"
@@ -74,7 +80,21 @@ typedef void OS_SETUP;
 /* PDSP Firmware files */
 #include "tnetd7300_sar_firm.h"
 
+#ifdef AR7_EFM
+extern void efm_SetDevStateConnected(HAL_DEVICE *HalDev);
+int tn7efm_sar_init_module(OS_FUNCTIONS *os_funcs);
+int tn7efm_sar_receive(OS_DEVICE *os_dev, FRAGLIST *frag_list, unsigned int frag_count,
+      unsigned int packet_size, HAL_RECEIVEINFO *hal_receive_info, unsigned int mode);
 
+#include "tnetd7200_efm_firm.h"
+#ifdef EFM_DEBUG
+#include "tnetd7200_efm_firm_lb.h"
+#endif
+extern Tn7AtmPrivate *mypriv;
+#endif
+
+
+#ifndef AR7_EFM
 enum
 {
   PACKET_TYPE_AAL5,
@@ -83,6 +103,7 @@ enum
   PACKET_TYPE_TRANS,
   PACKET_TYPE_AAL2
 }PACKET_TYPE;
+#endif
 
 enum
 {
@@ -101,7 +122,8 @@ enum
 #define SAR_PDSP_OAM_F5LB_COUNT_REG_ADDR  0xa300002c
 #define SAR_PDSP_OAM_F4LB_COUNT_REG_ADDR  0xa3000030
 
-#define RESERVED_OAM_CHANNEL              15
+//09/05/07: cph, move to tn7atm.h
+// #define RESERVED_OAM_CHANNEL              15
 
 #define AAL5_PARM "id=aal5, base = 0x03000000, offset = 0, int_line=15, ch0=[RxBufSize=1522; RxNumBuffers = 32; RxServiceMax = 50; TxServiceMax=50; TxNumBuffers=32; CpcsUU=0x5aa5; TxVc_CellRate=0x3000; TxVc_AtmHeader=0x00000640]"
 #define SAR_PARM "id=sar,base = 0x03000000, reset_bit = 9, offset = 0; UniNni = 0, PdspEnable = 1"
@@ -225,7 +247,11 @@ static void tn7sar_critical_off(void)
   spin_unlock_irqrestore(&sar_lock,lockflags);
 }
 
+#ifdef AR7_EFM
+int tn7sar_find_device(int unit, const char *find_name, void *device_info)
+#else
 static int tn7sar_find_device(int unit, const char *find_name, void *device_info)
+#endif
 {
   int ret_val = 0;
   char **ptr;
@@ -252,7 +278,11 @@ static int tn7sar_find_device(int unit, const char *find_name, void *device_info
   return(ret_val);
 }
 
+#ifdef AR7_EFM
+int tn7sar_get_device_parm_uint(void *dev_info, const char *param, unsigned int *value)
+#else
 static int tn7sar_get_device_parm_uint(void *dev_info, const char *param, unsigned int *value)
+#endif
 {
   char *dev_str;
   char *pMatch;
@@ -317,7 +347,11 @@ static int tn7sar_get_device_parm_uint(void *dev_info, const char *param, unsign
   return (1);
 }
 
+#ifdef AR7_EFM
+int tn7sar_get_device_parm_value(void *dev_info, const char *param, void *value)
+#else
 static int tn7sar_get_device_parm_value(void *dev_info, const char *param, void *value)
+#endif
 {
   char *dev_str;
   char *pMatch;
@@ -397,7 +431,35 @@ static int tn7sar_control(void *dev_info, const char *key, const char *action, v
   {
     if (strcmp(action, "Get") == 0)
     {
-      *(int **)value = &SarPdspFirmware[0];
+#ifdef AR7_EFM
+      Tn7AtmPrivate *priv = mypriv;
+
+      if (priv->curr_TC_mode == TC_MODE_PTM)
+      {
+#ifdef EFM_DEBUG
+        // g_efm_ctl: 0=ATM, 1=EFM_NORM, 4=EFM_LB, 0x10=TEST
+        if (priv->efm_ctl & 0x04) // LB
+        {
+          *(int **)value = &EfmPdspLBFirmware[0];
+          printk("FirmWare:LB\n");
+        }
+        else
+#endif
+        {
+          *(int **)value = &EfmPdspFirmware[0]; // EFM
+#ifdef EFM_DEBUG
+          printk("FirmWare:EFM\n");
+#endif
+        }
+      }
+      else
+#endif
+      {
+        *(int **)value = &SarPdspFirmware[0];
+#ifdef EFM_DEBUG
+        printk("FirmWare:ATM\n");
+#endif
+      }
     }
     ret_val=0;
   }
@@ -406,7 +468,28 @@ static int tn7sar_control(void *dev_info, const char *key, const char *action, v
   {
     if (strcmp(action, "Get") == 0)
     {
-      *(int *)value = sizeof(SarPdspFirmware);
+#ifdef AR7_EFM
+      Tn7AtmPrivate *priv = mypriv;
+
+      if (priv->curr_TC_mode == TC_MODE_PTM)
+      {
+#ifdef EFM_DEBUG // EFM_DEBUG
+        // efm_ctl: 0=ATM, 1=EFM_NORM, 4=EFM_LB, 0x10=TEST
+        if (priv->efm_ctl & 0x04) // LB
+        {
+          *(int *)value = sizeof(EfmPdspLBFirmware);
+        }
+        else
+#endif
+        {
+        *(int *)value = sizeof(EfmPdspFirmware); // EFM
+        }
+      }
+      else
+#endif
+      {
+        *(int *)value = sizeof(SarPdspFirmware); // ATM
+      }
     }
     ret_val=0;
   }
@@ -581,6 +664,21 @@ int tn7sar_process_unmatched_oam(FRAGLIST *frag_list, unsigned int frag_count, u
   return 0;
 }
 
+#ifdef AR7_EFM
+void tn7sar_SetEFMmode(Tn7AtmPrivate *priv, int mode)
+{
+  HAL_FUNCTIONS *pHalFunc = (HAL_FUNCTIONS *)priv->pSarHalFunc;
+  priv->EFM_mode = mode;
+  pHalFunc->SetEFMmode(priv->pSarHalDev, mode);
+}
+
+void tn7sar_SetOSDev(Tn7AtmPrivate *priv, void *os_dev)
+{
+  HAL_FUNCTIONS *pHalFunc = (HAL_FUNCTIONS *)priv->pSarHalFunc;  
+  pHalFunc->SetOSDev(priv->pSarHalDev, os_dev);
+}
+
+#endif
 
 static int tn7sar_receive(OS_DEVICE *os_dev,FRAGLIST *frag_list, unsigned int frag_count, unsigned int packet_size,
                  HAL_RECEIVEINFO *hal_receive_info, unsigned int mode)
@@ -665,7 +763,7 @@ static int tn7sar_receive(OS_DEVICE *os_dev,FRAGLIST *frag_list, unsigned int fr
 void tn7sar_teardown_complete(OS_DEVICE *OsDev, int ch, int Dir)
 {
   //AV: just for debugging.
-  printk("%s called for channel %d\n", __FUNCTION__, ch);
+//  printk("%s called for channel %d\n", __FUNCTION__, ch);
   return;
 }
 
@@ -676,6 +774,18 @@ int tn7sar_init_module(OS_FUNCTIONS *os_funcs)
   {
     return(-1);
   }
+#ifdef AR7_EFM
+  if (mypriv->mode_switching)
+  {
+    os_funcs->Receive                = tn7sar_receive;
+    os_funcs->SendComplete           = tn7sar_send_complete;
+  }
+  else
+  {
+  // OS_FUNCTIONS struct is fully initialized during driver initialization. (where mode_switching=0). 
+  // Later on, the tn7sar_init_module() will only be invoked when switch from EFM to ATM mode. (ie mode_switching=1)    
+  // Then the only entries need re-initialzed are the above two functions. (tn7sar_receive & tn7sar_send_complete)
+#endif
   os_funcs->Control                  = tn7sar_control;
   os_funcs->CriticalOn               = tn7sar_critical_on;
   os_funcs->CriticalOff              = tn7sar_critical_off;
@@ -704,12 +814,17 @@ int tn7sar_init_module(OS_FUNCTIONS *os_funcs)
   os_funcs->Strstr                   = strstr;
   os_funcs->Strtoul                  = tn7sar_strtoul;
   os_funcs->TeardownComplete         = tn7sar_teardown_complete;
-
+#ifdef AR7_EFM
+  }
+#endif
   return(0);
 }
 
-
+#ifdef AR7_EFM
+void tn7sar_init_dev_parm(void)
+#else
 static void tn7sar_init_dev_parm(void)
+#endif
 {
   int i;
 
@@ -807,7 +922,7 @@ int tn7sar_setup_oam_channel(Tn7AtmPrivate *priv)
   HAL_DEVICE    *pHalDev;
   int chan=RESERVED_OAM_CHANNEL; //15;
   char *pauto_pvc = NULL;
-  int  auto_pvc = 1;
+  int  auto_pvc = 0;
   unsigned int oam2host_ch;
   char   oam_str[20];
 
@@ -852,9 +967,9 @@ int tn7sar_setup_oam_channel(Tn7AtmPrivate *priv)
     chInfo.RxVp_OamToHost = 1; //jz: CQ#9861, Set the unmatched oam ping to the host flags
     chInfo.RxVc_OamCh     = RESERVED_OAM_CHANNEL;//jz: CQ#9861, Set the unmatched oam ping to the host flags
     chInfo.RxVp_OamCh     = RESERVED_OAM_CHANNEL;//jz: CQ#9861, Set the unmatched oam ping to the host flags
-    
+
     if(auto_pvc<=2)
-      chInfo.FwdUnkVc       = 1; 
+      chInfo.FwdUnkVc       = 1;
     else  //3 or more
       chInfo.FwdUnkVc       = 0; // was 1; test fix for not forwarding data cells!enable forwarding of unknown vc
 
@@ -870,13 +985,12 @@ int tn7sar_setup_oam_channel(Tn7AtmPrivate *priv)
 
   dgprintf(4, "TxVc_AtmHeader=0x%x\n", chInfo.TxVc_AtmHeader);
 
-
   if(pHalFunc->ChannelSetup(pHalDev, &chInfo, NULL))
   {
     printk("failed to setup channel =%d.\n", chan);
     return -1;
   }
-
+  
 #ifdef USE_PDSP_054  //CQ10273
     //Test new firmware fix  Norayda/Greg 12/15/05 v0.54bis
     // chInfo.FwdUnkVc       = 0; // was 1; test fix for not forwarding data cells!enable forwarding of unknown vc
@@ -886,7 +1000,7 @@ int tn7sar_setup_oam_channel(Tn7AtmPrivate *priv)
       printk("DBG----: PDSP54 autopvc_enable=%d(1: autoPVC ok, 2: unK=1 and 54chg, 3: unK=0 Greg's suggestion)\n", auto_pvc);
 #endif// __AUTOPVC_DBG
 
-      oam2host_ch = 0x4000000f;  //Use channel 15 (0xf) for unmatched oam cells, bit 31 cleared, bit 30 set, chnal=15 
+      oam2host_ch = 0x4000000f;  //Use channel 15 (0xf) for unmatched oam cells, bit 31 cleared, bit 30 set, chnal=15
       sprintf(oam_str, "a3009194%0X", oam2host_ch);
 #ifdef __AUTOPVC_DBG
       printk("DBG----: unmatched OAM option %d: cmd = %s.\n", oam2host_ch);
@@ -915,34 +1029,61 @@ int tn7sar_init(struct atm_dev *dev, Tn7AtmPrivate *priv)
   char *pLbTimeout;
   int lbTimeout;
 
-
   dgprintf(4, "tn7sar_init\n");
 
-  pOsFunc = (OS_FUNCTIONS  *)kmalloc(sizeof(OS_FUNCTIONS), GFP_KERNEL);
+#ifdef AR7_EFM
+  if (priv->mode_switching)
+  {
+    pOsFunc = priv->pSarOsFunc;
+    pHalFunc = priv->pSarHalFunc;
+    pHalDev = priv->pSarHalDev;
+    efm_SetDevStateConnected (pHalDev);
+  }
+  else
+  {
+    // OS_FUNCTIONS struct is only allocated once during driver initialization. (where mode_switching=0). 
+    // Later on, the tn7sar_init() will only be invoked when EFM mode switch to ATM mode. (ie mode_switching=1)
+#endif
+    pOsFunc = (OS_FUNCTIONS  *)kmalloc(sizeof(OS_FUNCTIONS), GFP_KERNEL);
+    priv->pSarOsFunc = ( void *)pOsFunc;
+#ifdef AR7_EFM
+  }
+#endif
 
-
-  priv->pSarOsFunc = ( void *)pOsFunc;
 
   /* init boot parms */
-  tn7sar_init_dev_parm();
+#ifdef AR7_EFM
+  if (!priv->efm_initialized) // only do this once 
+#endif
+    tn7sar_init_dev_parm();
+    
 
   /* init sar os call back functions */
   retCode = tn7sar_init_module(pOsFunc);
+
   if (retCode != 0) /* error */
   {
     printk("Failed to init SAR OS Functions\n");
     return (1);
   }
 
+#ifdef AR7_EFM
+  if (priv->efm_initialized)
+  {
+    hal_funcs_size = sizeof(HAL_FUNCTIONS);
+  }
+  else // Only do cpaal5InitModule() once.
+#endif
         /* Init sar hal */
-  retCode = cpaal5InitModule(&pHalDev, (OS_DEVICE*) dev, &pHalFunc,
+    retCode = cpaal5InitModule(&pHalDev, (OS_DEVICE*) dev, &pHalFunc,
                                pOsFunc, sizeof(OS_FUNCTIONS), &hal_funcs_size, 0);
+                               
   if (retCode != 0) /* error */
   {
     printk("Failed to init SAR HAL\n");
     return (1);
   }
-
+  
   /* sanity check */
   if (pHalDev == NULL || pHalFunc == NULL || hal_funcs_size != sizeof(HAL_FUNCTIONS) )
   {
@@ -950,12 +1091,20 @@ int tn7sar_init(struct atm_dev *dev, Tn7AtmPrivate *priv)
     return (1);
   }
 
-  /* remeber HAL pointers */
-  priv->pSarHalDev = (void *)pHalDev;
-  priv->pSarHalFunc = (void *)pHalFunc;
+#ifdef AR7_EFM
+  if (!priv->efm_initialized)
+  {
+#endif    
+    /* remeber HAL pointers */
+    priv->pSarHalDev = (void *)pHalDev;
+    priv->pSarHalFunc = (void *)pHalFunc;
+#ifdef AR7_EFM    
+  }
+#endif
 
         /* Probe for the Device to get hardware info from driver */
   retCode = pHalFunc->Probe(pHalDev);
+
   if (retCode !=0)
   {
     printk("SAR hal probing error.\n");
@@ -966,7 +1115,6 @@ int tn7sar_init(struct atm_dev *dev, Tn7AtmPrivate *priv)
   retCode = pHalFunc->Init(pHalDev);
   if (retCode != 0) /* error */
   {
-
     printk("pHalFunc->Init failed. err code =%d\n", retCode);
     return (1);
   }
@@ -1212,13 +1360,11 @@ int tn7sar_deactivate_vc(Tn7AtmPrivate *priv, int chan)
   //printk("tn7sar_deactivate_vc entered\n");
   pHalFunc = (HAL_FUNCTIONS *)priv->pSarHalFunc;
   pHalDev  = (HAL_DEVICE *)priv->pSarHalDev;
-
+  
   //AV: testing for disabling interrupts.
   //mode = 0xf; //tear down everything, wait for return;
   mode = (0xf & ~0x8); //tear down everything, don't wait for return;
-
   spin_lock_irqsave(&chan_close_lock, flags);
-
   rc = pHalFunc->ChannelTeardown(pHalDev, chan, mode);
 
 #if 0
@@ -1233,8 +1379,9 @@ int tn7sar_deactivate_vc(Tn7AtmPrivate *priv, int chan)
   }
 #endif
   spin_unlock_irqrestore(&chan_close_lock, flags);
+  
 
-  printk("ChannelTeardown returned rc = %d\n", rc);
+//  printk("ChannelTeardown returned rc = %d\n", rc);
   //return rc;
   return 0;
 }
@@ -1255,6 +1402,11 @@ void tn7sar_exit(struct atm_dev *dev, Tn7AtmPrivate *priv)
   pHalFunc->Shutdown(pHalDev);
 
   kfree(priv->pSarOsFunc);
+#ifdef AR7_EFM
+  priv->pSarOsFunc = NULL;
+  priv->pSarHalFunc = NULL;
+  priv->pSarHalDev = NULL;
+#endif
 
 }
 
@@ -1497,9 +1649,27 @@ int tn7sar_proc_sar_stat(char* buf, char **start, off_t offset, int count,int *e
   return len;
 }
 
-void tn7sar_get_sar_firmware_version(unsigned int *pdsp_version_ms, unsigned int *pdsp_version_ls)
+#ifdef AR7_EFM
+void tn7sar_get_EFM_firmware_version(unsigned int *pdsp_version_ms, unsigned int *pdsp_version_ls)
 {
+  int *pFirmWare;
 
+#ifdef EFM_DEBUG  
+  Tn7AtmPrivate *priv=mypriv;
+
+  if (priv->EFM_mode & 0x04)  // LB
+    pFirmWare = &EfmPdspLBFirmware[0];
+  else
+#endif
+    pFirmWare = &EfmPdspFirmware[0]; // NORM EFM
+    
+  *pdsp_version_ms = (pFirmWare[9]>>16) & 0xF;
+  *pdsp_version_ls = (pFirmWare[9]>>8) & 0xFF;
+}
+#endif
+
+void tn7sar_get_sar_firmware_version(unsigned int *pdsp_version_ms, unsigned int *pdsp_version_ls)
+{  
   *pdsp_version_ms = (SarPdspFirmware[9]>>20) & 0xF;
   *pdsp_version_ls = (SarPdspFirmware[9]>>12) & 0xFF;
   return;

@@ -139,6 +139,8 @@
 *                                          Also changed assignment into an |= to ensure that no DSP defaults for
 *                                          oamFeature are overriden
 // UR8_MERGE_END CQ10774 Ram
+*  UR8_MERGE_START_END CQ11922 Tim
+*    04Sep07     0.14.00            Tim    CQ11922: Added support for new scratchram for INP NDR tables
 *******************************************************************************/
 #include <dev_host_interface.h>
 #include <dsl_hal_register.h>
@@ -483,7 +485,7 @@ int  dslhal_support_unresetDslSubsystem(void)
   shim_osClockWait(64);
   dgprintf(5,"Brought ADSLSS out of Reset \n");
 
-//  DSLHAL_REG32(REG_GPIOENR) &= ~(BIT20|BIT21|BIT22|BIT23|BIT24|BIT25);
+  DSLHAL_REG32(REG_GPIOENR) &= ~(BIT20|BIT21|BIT22|BIT23|BIT24|BIT25);
   shim_osClockWait(64);
   dgprintf(5,"Configured GPIO 20-25 for McBSP \n");
 
@@ -2106,6 +2108,8 @@ int dslhal_support_hostDspCodeDownload(tidsl_t * ptidsl)
   profileList.dspScratchMem_p1 = (unsigned int *)dslhal_support_findProfileIndex(ptidsl,dslhal_support_byteSwap32((unsigned int)profileList.dspScratchMem_p1));
   profileList.dspScratchMem_p2 = (unsigned int *)dslhal_support_findProfileIndex(ptidsl,dslhal_support_byteSwap32((unsigned int)profileList.dspScratchMem_p2));
   profileList.dspScratchMem_p3 = (unsigned int *)dslhal_support_findProfileIndex(ptidsl,dslhal_support_byteSwap32((unsigned int)profileList.dspScratchMem_p3));
+  // UR8_MERGE_START_END CQ11922 Tim
+  profileList.dspScratchMem_p4 = (unsigned int *)dslhal_support_findProfileIndex(ptidsl,dslhal_support_byteSwap32((unsigned int)profileList.dspScratchMem_p4));
   rc = dslhal_support_blockWrite(&profileList,(PVOID)dspOamSharedInterface.profileList_p,sizeof(DEV_HOST_profileBase_t));
      if (rc)
        return DSLHAL_ERROR_BLOCK_WRITE;
@@ -2958,6 +2962,8 @@ int dslhal_support_reloadTrainingInfo(tidsl_t * ptidsl)
   profileList.dspScratchMem_p1 = (unsigned int *)dslhal_support_findProfileIndex(ptidsl,dslhal_support_byteSwap32((unsigned int)profileList.dspScratchMem_p1));
   profileList.dspScratchMem_p2 = (unsigned int *)dslhal_support_findProfileIndex(ptidsl,dslhal_support_byteSwap32((unsigned int)profileList.dspScratchMem_p2));
   profileList.dspScratchMem_p3 = (unsigned int *)dslhal_support_findProfileIndex(ptidsl,dslhal_support_byteSwap32((unsigned int)profileList.dspScratchMem_p3));
+  // UR8_MERGE_START_END CQ11922 Tim
+  profileList.dspScratchMem_p4 = (unsigned int *)dslhal_support_findProfileIndex(ptidsl,dslhal_support_byteSwap32((unsigned int)profileList.dspScratchMem_p4));
   rc = dslhal_support_blockWrite(&profileList,(PVOID)dspOamSharedInterface.profileList_p,sizeof(DEV_HOST_profileBase_t));
      if (rc)
        return DSLHAL_ERROR_BLOCK_WRITE;

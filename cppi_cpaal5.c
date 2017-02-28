@@ -16,6 +16,7 @@
  *  28Mar03 Mick 1.03    RxReturn now returns error if Malloc Fails
  *  10Apr03 Mick 1.03.02 Added Needs Buffer Support
  *  11Jun03 Mick 1.06.02 halSend() errors corrected
+ *  18Sept07 CPH 2.00    CQ11466: Added EFM support
  *
  *  @author  Greg Guyotte
  *  @version 1.00
@@ -63,7 +64,6 @@ static void FreeTx(HAL_DEVICE *HalDev, int Ch, int Queue)
   {
 
 /*+GSG 030303*/
-
    /* free all descriptors at once */
    HalDev->OsFunc->FreeDmaXfer(HalDev->TcbStart[Ch][Queue]);
 
@@ -74,13 +74,20 @@ static void FreeTx(HAL_DEVICE *HalDev, int Ch, int Queue)
    a teardown interrupt */
 static int RxTeardownInt(HAL_DEVICE *HalDev, int Ch)
   {
-   bit32u base = HalDev->dev_base;
+   bit32u base = HalDev->dev_base;   
 
    int i;
    volatile bit32u *pTmp;
 
    /* check to see if the interrupt is a teardown interrupt */
+#ifdef AR7_EFM
+   // EFM doesn't generate Rx Teardown interrupt, so we are calling 
+   // RxTeardownInt explicitly, 
+   if (HalDev->EFM_mode || 
+       ((*(pRX_CPPI_COMP_PTR( base )+( Ch *64)))  & TEARDOWN_VAL) == TEARDOWN_VAL)
+#else
    if (((*(pRX_CPPI_COMP_PTR( base )+( Ch *64)))  & TEARDOWN_VAL) == TEARDOWN_VAL)
+#endif    
      {
       /* finish channel teardown */
 
@@ -146,6 +153,7 @@ static int TxTeardownInt(HAL_DEVICE *HalDev, int Ch, int Queue)
    int i;
 
    volatile bit32u *pTmp;
+      
 
    if (((*(pTXH_CPPI_COMP_PTR( base )+( Ch *64)+( Queue )))  & TEARDOWN_VAL) == TEARDOWN_VAL)
      {
@@ -253,7 +261,7 @@ static void AddToRxQueue(HAL_DEVICE *HalDev, HAL_RCB *FirstRcb, HAL_RCB *LastRcb
      {
       register HAL_RCB *OldTailRcb;
       register bit32u rmode;
-      
+
       HalDev->OsFunc->CriticalOn();
       OldTailRcb=HalDev->RxActQueueTail[Ch];
       OldTailRcb->Next=(void *)FirstRcb;
@@ -267,7 +275,7 @@ static void AddToRxQueue(HAL_DEVICE *HalDev, HAL_RCB *FirstRcb, HAL_RCB *LastRcb
         rmode&=~CB_EOQ_BIT;
         ((*(pRX_DMA_STATE_WORD_1(  HalDev->dev_base  )+(  Ch  *64))) )  = VirtToPhys(FirstRcb) - HalDev->offset;
         OldTailRcb->mode=rmode;
-        }   
+        }
       HalDev->OsFunc->CriticalOff();
      }
   }
@@ -621,6 +629,7 @@ static int InitRcb(HAL_DEVICE *HalDev, int Ch)
  *           @ref EC_VAL_OUT_OF_TCBS "EC_VAL_OUT_OF_TCBS"<BR>
  *           @ref EC_VAL_NO_TCBS "EC_VAL_NO_TCBS"<BR>
  */
+
 static int halSend(HAL_DEVICE *HalDev,FRAGLIST *FragList,
                       int FragCount,int PacketSize, OS_SENDINFO *OsSendInfo,
                       bit32u Mode)
@@ -637,6 +646,14 @@ static int halSend(HAL_DEVICE *HalDev,FRAGLIST *FragList,
   int PktType = (Mode>>16)&3; /* 0=AAL5, 1=Null AAL, 2=OAM, 3=Transparent */           /* +GSG 030508 */
   int AtmHeaderInData = (Mode>>31)&1;                                                 /* +GSG 030508 */
   int FragIndex = 0;
+  
+#ifdef EFM_DEBUG
+    if (g_efm_proc_ctl & 1)
+  {
+        printk("cppi_cpaal5:halSend, state=%d, Mode=%d, Ch=%d, Queue=%d, PktType=%d\n",
+          HalDev->State, Mode, Ch, Queue, PktType );
+    }
+#endif
 
   if (HalDev->State != enOpened)
      return(EC_CPPI|EC_FUNC_SEND|EC_VAL_INVALID_STATE);
@@ -653,6 +670,14 @@ static int halSend(HAL_DEVICE *HalDev,FRAGLIST *FragList,
   if (tcb_ptr)
     {
 
+#ifdef AR7_EFM
+    if (HalDev->EFM_mode)
+    {
+      tcb_ptr->Word5 = ((HalDev->ChData[Ch].PktType &0x3)<<16);
+    }
+    else
+    {
+#endif
      /* these two TCB words are only valid on SOP */
      if (AtmHeaderInData == 1)
        {
@@ -682,6 +707,9 @@ static int halSend(HAL_DEVICE *HalDev,FRAGLIST *FragList,
 
         tcb_ptr->Word5 = HalDev->ChData[Ch].CpcsUU | ((HalDev->ChData[Ch].PktType &0x3)<<16);
        }
+#ifdef AR7_EFM
+     }
+#endif
 
      for (i=FragIndex; i<FragCount; i++)
 
@@ -689,8 +717,17 @@ static int halSend(HAL_DEVICE *HalDev,FRAGLIST *FragList,
         /* Setup Tx mode and size */
         tcb_ptr->HNext    = VirtToPhys((bit32 *)tcb_ptr->Next) - HalDev->offset;
         tcb_ptr->Off_BLen = FragList[i].len;
+/* Modified by Sabrina
+printk(" Hnext=%08x, Off_Blen=%d\n", tcb_ptr->HNext, tcb_ptr->Off_BLen);
+*/
+        #ifdef EFM_DEBUG
+            if (g_efm_proc_ctl & 1)
+          {
+            printk(" Hnext=%08x, Off_Blen=%d\n", tcb_ptr->HNext, tcb_ptr->Off_BLen);
+          }
+      #endif
 
-        if (i==0)
+      if (i==0)
           tcb_ptr->Off_BLen |= (Offset << 16);
 
         tcb_ptr->mode     = 0;  /* MUST clear this for each frag !!! */
@@ -723,7 +760,15 @@ static int halSend(HAL_DEVICE *HalDev,FRAGLIST *FragList,
            /* In the Tx Interrupt handler, we will need to know which TCB is EOP,
               so we can save that information in the SOP */
            head->Eop = tcb_ptr;
-
+/* Modified by Sabrina
+printk("Eop=%08x\n",  head->Eop);
+*/
+        #ifdef EFM_DEBUG
+            if (g_efm_proc_ctl & 1)
+          {
+            printk("Eop=%08x\n",  head->Eop);
+          }
+      #endif
            /* Emerald fix 10/29 */
        osfuncDataCacheHitWriteback((void *)tcb_ptr, 16);
 
@@ -769,19 +814,19 @@ static int halSend(HAL_DEVICE *HalDev,FRAGLIST *FragList,
        }
       else
        {
-	    register volatile HAL_TCB *pTailTcb;   
+      register volatile HAL_TCB *pTailTcb;
         register bit32u tmode;
         register bit32u pCurrentTcb;
-        
+
         HalDev->TxActQueueTail[Ch][Queue]->Next=head;
         /* Emerald fix 10/29 */
-        
+
         pTailTcb=(HAL_TCB *)VirtToVirtNoCache(&HalDev->TxActQueueTail[Ch][Queue]->HNext);
         pCurrentTcb=VirtToPhys(head)  - HalDev->offset;
         pTailTcb->HNext=pCurrentTcb;
         HalDev->TxActQueueTail[Ch][Queue]=tcb_ptr;
 /*+GSG 030303*/
-        tmode=pTailTcb->mode;  
+        tmode=pTailTcb->mode;
         if (tmode&CB_EOQ_BIT)
           {
            tmode&=~CB_EOQ_BIT;
@@ -833,6 +878,7 @@ static int RxInt(HAL_DEVICE *HalDev, int Ch, int *MoreWork)
 
   bit32u SopOffset;
 
+
   if(HalDev->NeedsCount) /* +MJH 030410 */
     NeedsCheck(HalDev);  /* +MJH 030410 */
 
@@ -872,6 +918,7 @@ static int RxInt(HAL_DEVICE *HalDev, int Ch, int *MoreWork)
     /* Not sure what MAC needs to do for next block */
 
     PktType=((SopRcb->UuCpi & 0x00030000) >> 16);                           /* GSG ~030508 */
+
     /* Calculate the expected DMA length */
     if (RxPktLen != 0)
       {
@@ -896,6 +943,10 @@ static int RxInt(HAL_DEVICE *HalDev, int Ch, int *MoreWork)
     FrmLen=0;
     EofRcb=0;
 
+#ifdef AR7_EFM
+  if (!HalDev->EFM_mode)
+  { // follwing for ATM mode only
+#endif
 /* +GSG 030508 */
     if ((PktType == PKT_TYPE_OAM) || (PktType == PKT_TYPE_TRANS))            /* +GSG 030508 */
       {                                                                      /* +GSG 030508 */
@@ -907,6 +958,9 @@ static int RxInt(HAL_DEVICE *HalDev, int Ch, int *MoreWork)
        FragIndex++;                                                          /* +GSG 030508 */
       }                                                                      /* +GSG 030508 */
 /* +GSG 030508 */
+#ifdef AR7_EFM
+  }
+#endif
 
     do
       {
@@ -975,8 +1029,11 @@ static int RxInt(HAL_DEVICE *HalDev, int Ch, int *MoreWork)
     /* setup SopRcb for the packet */
     SopRcb->Eop=(void*)EopRcb;
     SopRcb->FragCount=TotalFrags;
-
+#ifdef AR7_EFM
+    if (((ExpDmaSize!=CurrDmaLen) && (PktType == PKT_TYPE_AAL5) ) ||(RxSopStatus&RX_ERROR_MASK))
+#else
     if ((ExpDmaSize!=CurrDmaLen)||(RxSopStatus&RX_ERROR_MASK))
+#endif
       {
        /* check for Rx errors (only valid on SOP) */
        if (RxSopStatus & RX_ERROR_MASK)
@@ -1000,6 +1057,29 @@ static int RxInt(HAL_DEVICE *HalDev, int Ch, int *MoreWork)
 
        EarlyReturn = 1;
       }
+
+#ifdef EFM_DEBUG
+  {
+    unsigned char *p_crc16= (unsigned char *) 0xa300815d;
+
+if (g_efm_proc_ctl & 0x200)        
+  printk("\nRxCRC16:%02x %02x (%s)\n", p_crc16[0], p_crc16[1],  
+    (RxSopStatus & CRC_ERROR_MASK) ? "err" : "ok");                 
+    
+    if ((RxSopStatus & CRC_ERROR_MASK) && (g_efm_proc_ctl & 0x20) )
+    {     
+      if (g_efm_proc_ctl & 0x400)           
+    {                   
+      printk("\nRxCRC16:%02x %02x (err)\n", p_crc16[0], p_crc16[1]);    
+    }   
+      // if debug bit 0x20 is on, don't drop the packet. 
+      EarlyReturn = 0;
+    }
+/*      printk("crc16:%02x %02x (%s)\n", p_crc16[0], p_crc16[1],
+        (RxSopStatus & CRC_ERROR_MASK) ? "err" : "ok");
+*/
+  }
+#endif
 
     /* do not pass up the packet if we're out of RCB's (or have an errored packet)*/
     if ((CurrentRcb == 0) || (EarlyReturn == 1))
@@ -1218,6 +1298,10 @@ static int TxInt(HAL_DEVICE *HalDev, int Ch, int Queue, int *MoreWork)
       }while(((TxFrameStatus&CB_OWNERSHIP_BIT)==0)
              &&(PacketsServiced<TxServiceMax));
 
+#ifdef AR7_EFM
+  if (!HalDev->EFM_mode)
+  { // following for ATM mode only
+#endif
     /* this fixes the SAR TurboDSL hardware bug (multiple queue failure) */
     if (HalDev->TxActive[Ch][OtherQueue])
       if (HalDev->TxActQueueHead[Ch][OtherQueue])
@@ -1231,6 +1315,10 @@ static int TxInt(HAL_DEVICE *HalDev, int Ch, int Queue, int *MoreWork)
                 VirtToPhys(HalDev->TxActQueueHead[Ch][OtherQueue]);
              }
           }
+#ifdef AR7_EFM
+  }
+#endif
+
 
     OsFunc->CriticalOff(); /* +GSG 030307 */
     if (((TxFrameStatus&CB_OWNERSHIP_BIT)==0)
@@ -1295,7 +1383,8 @@ static int halChannelTeardown(HAL_DEVICE *HalDev, int Ch, bit32 Mode)
 
    int Ret;
 
-   /* AAL5 only supports tearing down both sides at once (currently)*/
+
+   /* AAL5 only supports tearing down both sides at once (currently)*/   
    Mode = (Mode | TX_TEARDOWN | RX_TEARDOWN);
 
    DoTx = (Mode & TX_TEARDOWN);
@@ -1308,6 +1397,7 @@ static int halChannelTeardown(HAL_DEVICE *HalDev, int Ch, bit32 Mode)
      {
      return(EC_AAL5 |EC_FUNC_CHTEARDOWN|EC_VAL_INVALID_CH);
      }
+     
 
    /* set teardown pending bits before performing the teardown, because they
       will be used in the int handler (this is done for AAL5) */
@@ -1331,10 +1421,9 @@ static int halChannelTeardown(HAL_DEVICE *HalDev, int Ch, bit32 Mode)
     }
        else
     {
+  
          if (HalDev->ChIsOpen[Ch][DIRECTION_TX] == 0)
-       {
             return(EC_AAL5 |EC_FUNC_CHTEARDOWN|EC_VAL_TX_CH_ALREADY_TORNDOWN);
-       }
 
          /* set teardown flag */
          HalDev->TxTeardownPending[Ch] = Mode;
@@ -1392,6 +1481,17 @@ static int halChannelTeardown(HAL_DEVICE *HalDev, int Ch, bit32 Mode)
 
       /* call main teardown routine for Rx */
       Ret = HalDev->SarFunc->ChannelTeardown(HalDev->SarDev, Ch, Mode);
+
+#ifdef AR7_EFM
+  // EFM mode doesn't have Rx Teardown interrupt, need explicitly call 
+  // RxTeardownInt So that it can FreeRx..
+      if (HalDev->EFM_mode)
+      {
+        RxTeardownInt(HalDev, Ch);  
+        TxTeardownInt(HalDev, Ch, 0);  // Always use Queue 0 for EFM.                         
+      }       
+#endif      
+      
       if (Ret) return (Ret);
 
       if (Mode & BLOCKING_TEARDOWN)
@@ -1412,6 +1512,21 @@ static int halChannelTeardown(HAL_DEVICE *HalDev, int Ch, bit32 Mode)
 
    return (EC_NO_ERRORS);
   }
+
+#ifdef AR7_EFM
+static int halSetEFMmode(HAL_DEVICE *HalDev, int Mode)
+{
+  HalDev->EFM_mode = Mode;
+  HalDev->SarFunc->SetEFMmode(HalDev->SarDev, Mode);
+  return (EC_NO_ERRORS);
+}
+
+static int halSetOSDev (HAL_DEVICE *HalDev, OS_DEVICE *OS_Dev)
+{
+  HalDev->OsDev = OS_Dev;
+  return (EC_NO_ERRORS);
+}
+#endif
 
 /**
  *  @ingroup CPHAL_Functions
@@ -1446,28 +1561,37 @@ static int halClose(HAL_DEVICE *HalDev, bit32 Mode)
    OS_FUNCTIONS *TmpOsFunc;
    HAL_FUNCTIONS *TmpHalFunc;
    char *TmpDeviceInfo;
-
+#ifdef AR7_EFM
+   int max_chan = (HalDev->EFM_mode ? MAX_EFM_CHAN : MAX_AAL5_CHAN);
+#endif
    CPSAR_FUNCTIONS *TmpSarFunc;
    CPSAR_DEVICE *TmpSarDev;
+
 
    /* Verify proper device state */
    if (HalDev->State != enOpened)
      return (EC_AAL5  | EC_FUNC_CLOSE|EC_VAL_INVALID_STATE);
 
    /* Teardown all open channels */
+#ifdef AR7_EFM
+   for (Ch = 0; Ch <= max_chan ; Ch++)
+#else
    for (Ch = 0; Ch <= MAX_AAL5_CHAN ; Ch++)
+#endif
      {
       if (HalDev->ChIsOpen[Ch][DIRECTION_TX] == TRUE)
         {
          if (Mode == 1)
            {
             Ret = halChannelTeardown(HalDev, Ch, TX_TEARDOWN | PARTIAL_TEARDOWN | BLOCKING_TEARDOWN);
-            if (Ret) return (Ret);
+            if (Ret)
+              return (Ret);
            }
           else
            {
-            Ret = halChannelTeardown(HalDev, Ch, TX_TEARDOWN | FULL_TEARDOWN | BLOCKING_TEARDOWN);
-            if (Ret) return (Ret);
+            Ret = halChannelTeardown(HalDev, Ch, TX_TEARDOWN | FULL_TEARDOWN | BLOCKING_TEARDOWN);            
+            if (Ret)
+              return (Ret);
            }
         }
 
@@ -1476,17 +1600,20 @@ static int halClose(HAL_DEVICE *HalDev, bit32 Mode)
          if (Mode == 1)
            {
             Ret = halChannelTeardown(HalDev, Ch, RX_TEARDOWN | PARTIAL_TEARDOWN | BLOCKING_TEARDOWN);
-            if (Ret) return (Ret);
+            if (Ret)
+              return (Ret);
            }
           else
            {
             Ret = halChannelTeardown(HalDev, Ch, RX_TEARDOWN | FULL_TEARDOWN | BLOCKING_TEARDOWN);
-            if (Ret) return (Ret);
+            if (Ret)
+              return (Ret);
            }
         }
      }
 
    /* free fraglist in HalDev */
+
    HalDev->OsFunc->Free(HalDev->fraglist);
    HalDev->fraglist = 0;
 
