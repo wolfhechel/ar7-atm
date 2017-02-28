@@ -309,11 +309,6 @@ static struct
     {"avsar_modem_training",        tn7dsl_proc_modem,             NULL},
     {"avsar_modem_stats",           tn7dsl_proc_stats,             tn7dsl_proc_write_stats},
 
-	/* junzhao add to show dsl status at 2007.4.12 */
-	{"avsar_dsl_ticks", 			tn7dsl_state_ticks, 		   NULL},    
-	/* Junzhao add end */
-
-    
 #ifdef ADV_DIAG_STATS //CQ10275
 //for 2.6    {"avsar_modem_adv_stats",       tn7dsl_proc_adv_stats,         NULL},
 //For 2.4 kernel, due to proc file system size limitation
@@ -847,7 +842,7 @@ static int __init tn7atm_get_ESI (struct atm_dev *dev)
   char esi_addr[ESI_LEN] = { 0x00, 0x00, 0x11, 0x22, 0x33, 0x44 };
   char *esiaddr_str = NULL;
 
-  esiaddr_str = prom_getenv ("macc");
+  esiaddr_str = prom_getenv ("maca");
 
   if (!esiaddr_str)
   {

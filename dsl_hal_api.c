@@ -240,6 +240,19 @@
 *  UR8_MERGE_END   CQ11054*
 *  UR8_MERGE_START_END CQ11247_TR69_DS_LATN_SATN  YW
 *  12/18/06   Yan Wang      CQ11247: TR069 range and precision changes for LATNds, SATNds  
+*  UR8_MERGE_START   CQ11227 KCCHEN
+*  01/02/07     KuanChen Chen CQ11227: ADSL1 upstream max rate report. Customer wants to access the 
+*                                      upstream max rate through the CoPMDTestParams_t struct.
+*  UR8_MERGE_END   CQ11227 KCCHEN
+*  UR8_MERGE_START_END CQ11446 Nima :Added handling of BROWNOUT message for dying gasp
+*  UR8_MERGE_START_END CQ11341 Ram
+*  03/05/07  Ram    CQ11341: Changed the offset of the function dslhal_api_setPhyFeatureController
+*                            to be the same as dslhal_api_enableDisablePhyFeatures. Although these
+*                            two functions are now exactly identical, it has been maintained for
+*                            consistency to legacy Customer API calls.
+*                            Also updated dslhal_api_readPhyFeatureSettings to equate the content
+*                            of phyEnableDisableWord & phyControlWord to avoid changing API struct
+*                            which may cause change required to application data structure.
 ******************************************************************************/
 #include <dev_host_interface.h>
 #include <dsl_hal_register.h>
@@ -858,13 +871,28 @@ static int dslhal_api_processMailBox(tidsl_t *ptidsl,
         ptidsl->AppData.clear_eoc = 1;
         break;
       }
-
+//UR8_MERGE_START CQ11446
+//Added handling of BROWNOUT message for dying gasp
       case DSP_DGASP:
-      {
-        dgprintf(0,"\nDSP_GASP!!!\n");
+        {
+//#define REG_SWRCR (PRCR_BASE + 0x0004)
+//#define SWRCR_SWR0 0x00000001
+//        DSLHAL_REG32(REG_SWRCR) |= SWRCR_SWR0;
+        dgprintf(5,"\nDSP_GASP!!! %d\n", tag);
         ptidsl->AppData.LPR = 1;
         break;
       }
+case DSP_BROWNOUT:
+{
+//#define REG_SWRCR (PRCR_BASE + 0x0004)
+//#define SWRCR_SWR0 0x00000001
+//        DSLHAL_REG32(REG_SWRCR) |= SWRCR_SWR0;
+        dgprintf(5,"\nBROWN_OUT!!! %d\n", tag);
+        ptidsl->AppData.LPR = 1;
+        break;
+}
+//UR8_MERGE_END CQ11446
+
 
 #if 1 // LOF  CQ10226
       case DSP_LOF:
@@ -3925,6 +3953,10 @@ unsigned int dslhal_api_getAdvancedStats(tidsl_t * ptidsl)
 *                 for ADSL2+ mode, 1*512=512 bytes are expected.
 *         int flag: 0: training. (1: showtime).
 *         **Note: Currently only showtime is supported.
+// UR8_MERGE_START   CQ11227 KCCHEN
+*         Note: In ADSL1 mode, only upstream snr margin and attndr are valid. The other items in 
+*               CoPMDTestParams_t are invalid.
+// UR8_MERGE_END   CQ11227 KCCHEN
 *
 * Return: DSLHAL_ERROR_NO_ERRORS  success
 *         otherwise               failed
@@ -3944,10 +3976,8 @@ unsigned int dslhal_api_getPMDTestus(tidsl_t * ptidsl, CoPMDTestParams_t * co_pm
   if (flag!=1)
     return DSLHAL_ERROR_INVALID_PARAM;
 
-  // Must be ADSL2/2+ mode
-  if (!(ptidsl->AppData.TrainedMode & (ADSL2PLUS_MASKS|ADSL2_MASKS)) )
-    return DSLHAL_ERROR_UNSUPPORTED_MODE;
-
+  // UR8_MERGE_START_END   CQ11227 KCCHEN Changed to allow customers to 
+  // access co_attndr in CoPMDTestParams_t struct
   num_swap32 = (sizeof(CoPMDTestParams_t))>>2;
   
   for (i=0; i< num_swap32; i++)
@@ -4245,8 +4275,17 @@ static short dslhal_staticapi_getHlog(tidsl_t *ptidsl,unsigned int index)
 ********************************************************************************************/
 unsigned int dslhal_api_setPhyFeatureController(tidsl_t * ptidsl, unsigned int paramId, unsigned int phyCtrlWord)
 {
-  unsigned int offset[] = {35,0,1}, currentControlWord=0, rc=0;
-
+  //UR8_MERGE_START CQ11341 Ram
+  unsigned int offset[] = {35,0,0}, currentControlWord=0, rc=0; 
+  // This change mirrors the changes in DSP Host Interface, which now has a single
+  // 32-bit API bit control field to turn-on/off API bits, hence getting rid of the
+  // redundant second field, which was not being used as per the originally intended
+  // design to allow a field to toggle host or dsp control for each feature and another
+  // bit field to turn the corresponding feature on or off.
+    
+  // This change makes this API function exactly identical to the API function below
+  // dslhal_api_enableDisablePhyFeatures. This is required to maintain consistency in
+  // customer API calls.
   if(paramId > MAX_PHY_FEATURE_PARAMID)
   {
     dgprintf(3,"Invalid input parameter \n");
@@ -4374,7 +4413,13 @@ unsigned int dslhal_api_readPhyFeatureSettings(tidsl_t * ptidsl, unsigned int pa
     return DSLHAL_ERROR_BLOCK_READ;
 
   pPhySetting->phyEnableDisableWord = dslhal_support_byteSwap32(currentFeatureSet);
-
+  // UR8_MERGE_START CQ11341 Ram
+  // Since the dev_host_interface.h structure has been changed to remove phyControl, 
+  // to keep the impact to Application layer API calls, this value which corresponds
+  // to the removed element in the host interface is being maintained and set equal 
+  // to phyEnableDisableWord for transparency.
+  pPhySetting->phyControlWord = dslhal_support_byteSwap32(currentFeatureSet);
+/*
   offset[2] = 1;
   rc += dslhal_api_dspInterfaceRead(ptidsl,
                                     (unsigned int) ptidsl->pmainAddr,
@@ -4384,7 +4429,8 @@ unsigned int dslhal_api_readPhyFeatureSettings(tidsl_t * ptidsl, unsigned int pa
                                     NUM_BYTES_PER_INT);
 
   pPhySetting->phyControlWord = dslhal_support_byteSwap32(currentFeatureSet);
-
+*/
+ // UR8_MERGE_END CQ11341 Ram
   if(rc)
     return DSLHAL_ERROR_BLOCK_WRITE;
 

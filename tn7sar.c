@@ -807,7 +807,7 @@ int tn7sar_setup_oam_channel(Tn7AtmPrivate *priv)
   HAL_DEVICE    *pHalDev;
   int chan=RESERVED_OAM_CHANNEL; //15;
   char *pauto_pvc = NULL;
-  int  auto_pvc = 0;
+  int  auto_pvc = 1;
   unsigned int oam2host_ch;
   char   oam_str[20];
 

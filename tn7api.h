@@ -83,9 +83,6 @@ void tn7atm_data_invalidate(void *pmem, int size);
 int tn7atm_memcmp(void * dst, void const * src, size_t len);
 void * tn7atm_memcpy(void * dst, void const * src, size_t len);
 
-/* junzhao add 2007.4.12 */
-int tn7dsl_state_ticks(char *buf, char **start, off_t offset, int count, int *eof, void *date);
-
 /* tn7dsl.h */
 void tn7dsl_exit(void);
 int tn7dsl_init(void *priv);

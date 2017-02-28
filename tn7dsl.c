@@ -3845,33 +3845,6 @@ static void tn7dsl_diagnostic_test(char *data)
 
 #endif
 
-
-/* junzhao add to show dsl status at 2007.4.12 */
-int tn7dsl_state_ticks(char *buf, char **start, off_t offset, int count, 
-					   int *eof, void *date)
-{
-	int len = 0;
-	int limit = count - 80;
-	trainStateInfo trainStates;
-
-	dslhal_advcfg_getTrainingState(pIhw, &trainStates);
-
-	if(len <= limit)
-		len += sprintf(buf + len, "\nDisplay Training Counters\n\n");
-	if(len <= limit)
-		len += sprintf(buf + len, "\tIdle Tick: \t0x%x\n", pIhw->AppData.idleTick);
-	if(len <= limit)
-		len += sprintf(buf + len, "\tInit Tick: \t0x%x\n", pIhw->AppData.initTick);
-	if(len <= limit)
-		len += sprintf(buf + len, "\tSync Tick: \t0x%x\n\n", pIhw->AppData.showtimeTick);
-	if(len <= limit)
-		len += sprintf(buf + len, "\tState:%d,  Substate:%d,  Timestamp:%d\n", trainStates.aturState, trainStates.subStateIndex, trainStates.timeStamp);
-
-	return len;
-}	
-//junzhao end
-
-
 static void tn7dsl_chng_modulation(void* data)
 {
   unsigned char tmp1[64], tmp2[64], *p;
@@ -3924,34 +3897,6 @@ static void tn7dsl_chng_modulation(void* data)
     dslhal_api_sendQuiet(pIhw);
     return;
   }
-
-  /* junzhao add for Continuously Sending Mode at 2007.04.12 
-	Command format: marginmonitor:train.showtime 
-	 train	 : on -- To leave the training margin monitor in the enabled state
-			   off-- To disable the showtime margin monitor	 
-	 showtime: on -- To disable retrains due to LOS
-			   off-- From AR7 D5.0 onwrds this logic has been reversed, using 0 					 to instead
-  */
-  if(strstr(data, "marginmonitor"))
-  {
-
-  	unsigned int train = TRUE;
- 	unsigned int showt = TRUE;	
-  	unsigned char *trainP, *showtP;
-	strsep(&data, ":");
-    trainP = strsep(&data, ".");
-	showtP = strsep(&data, "\0");
-	if((trainP == NULL) || (showtP == NULL))
-		return;
-	if(!strcmp(trainP, "off"))
-		train = FALSE;
-	if(!strcmp(showtP, "off"))
-		showt = FALSE;	
-	dslhal_api_setMarginMonitorFlags(pIhw, train, showt);
-  	return;
-  }    
-/* junzhao end */
-
 
   //fine gain
   if(!strcmp(data, "gainctlon"))

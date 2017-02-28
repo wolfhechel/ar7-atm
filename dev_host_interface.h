@@ -399,6 +399,27 @@
 *  12/18/06 Hao-Ting Lin  Add API bit 31 TR067_DSPCB_FIX
 *  UR8_MERGE_END CQ11230 Hao-Ting Lin
 // 12/23/06 Ram      CQ11281: Added API bit for shorter g.hs Reset time ENABLE_GHS_SHORT_RESET
+// UR8_MERGE_START_END CQ11306 AdeelJ
+// 01/04/07   Adeel Jalil   CQ11306: Added INTEROP_1 API bit 1 for OTE AnnexB interoperability fix 
+// UR8_MERGE_START     CQ11341 AdeelJ
+// 01/12/2007 AdeelJ       CQ11341: Removed enums for redundant CONTROL API bits and removed definition for 
+                                    redundant Control Field.
+// UR8_MERGE_END     CQ11341 AdeelJ
+//UR8_MERGE_END_CQ11425
+// UR8_MERGE_START     CQ11425 Kuan-Chen Chen
+// 01/26/2007 KCCHEN       CQ11425: Added INTEROP_1 API bit 4 for Aztech Connexant's wrong read of near and far end
+//                                  aggregate power of DS PMD.
+//UR8_MERGE_END_CQ11425
+* UR8_MERGE_START_END CQ11467 ANNEX_I_GHS  HL
+*  02/07/07   Hanyu         CQ11467: Added PHY API bit21 = ENABLE_ANNEXI_SUPPORT
+//UR8_MERGE_START_END CQ11446 Nima Ferdosi
+// Added DSP_BROWNOUT message for exiting the Dying Gasp.
+* UR8_MERGE_START_END CQ11307 Ram
+* 03/02/07  Ram       CQ11307: Added Interop_1 API bit5 for British Telecom qualification
+*UR8_MERGE_START_END CQ11516 Tim
+*  02/26/07   Tim           CQ11516: Added two new code pages
+* UR8_MERGE_START_END CQ11260 WT100_CTLM_B900 HL
+*  01/15/07 Hanyu    CQ11260: Added API bit2,3 in IOP FEATURE list1 for CTLM B900 O2 fix.
 * (C) Copyright Texas Instruments Inc. 2002.  All rights reserved.
 *******************************************************************************/
 
@@ -535,7 +556,9 @@ enum
   DSP_CLEAR_EOC,          // DSP Message to indicate that the Rx buffer is full and ready for host to reead
   // UR8_MERGE_START SRA Tim Bornemisza
   DSP_LOF,                // DSP Message to indicate an LOF alarm is being set or cleared
-  DSP_SRA                 // Downstream SRA complete - FOR INTERNAL USE ONLY
+  DSP_SRA,                 // Downstream SRA complete - FOR INTERNAL USE ONLY
+  //UR8_MERGE_START_END CQ11446 Nima
+  DSP_BROWNOUT            // DSP message to host to indicate die gasp has ended
   // UR8_MERGE_END SRA Tim Bornemisza
 };
 
@@ -690,6 +713,8 @@ enum
   ENABLE_ADSL2_2PLUS_HLIN = BIT19,    //CQ11277 Ram
   // UR8_MERGE_START_END CQ11281 Ram
   ENABLE_GHS_SHORT_RESET = BIT20,     //CQ11281 Ram
+// UR8_MERGE_START_END CQ11467 ANNEX_I_GHS  HL
+  ENABLE_ANNEXI_SUPPORT = BIT21,
   // UR8_MERGE_START CQ11004 Nima
   // UR8_MERGE_START_END Renamed ENABLE_PHY_TI_INTERNAL2 to DISABLE_PHY_TI_INTERNAL2
   DISABLE_PHY_TI_INTERNAL2    = BIT29,    //CQ11004
@@ -751,65 +776,30 @@ enum
   ENABLE_CTLM_LOW_USRATE_FIX               = BIT30
 };
 
-enum
-{
-  CONTROL_FORCED_T1413_GSPV_REV2             =  DISABLE_FORCED_T1413_GSPV_REV2,
-  CONTROL_SHORT_LOOP_US_ERR_REDUCTION        =  ENABLE_SHORT_LOOP_US_ERR_REDUCTION,    //CQ9459
-  CONTROL_T1413_LONG_LOOP_ACTIVATION         =  ENABLE_T1413_LONG_LOOP_ACTIVATION,
-  CONTROL_QWEST_ALCATEL_US_LOW_RATE_FIX      =  ENABLE_QWEST_ALCATEL_US_LOW_RATE_FIX,
-  CONTROL_ASB_ETSIB_HIGH_BER_FIX             =  ENABLE_ASB_ETSIB_HIGH_BER_FIX,
-  CONTROL_BELL_CANADA_DOUBLE_BRIDGE_TAP_FIX  =  ENABLE_BELL_CANADA_DOUBLE_BRIDGE_TAP_FIX,
-  CONTROL_BELGACOM_DS_FIX                    =  ENABLE_BELGACOM_DS_FIX,
-  CONTROL_CINCINNATI_BELL_FIX                =  ENABLE_CINCINNATI_BELL_FIX,
-  CONTROL_FRANCE_TELECOM_FIX                 =  ENABLE_FRANCE_TELECOM_FIX,
-  CONTROL_QWEST_US_1M_RATE_FIX               =  ENABLE_QWEST_US_1M_RATE_FIX,
-  CONTROL_SAFEMODE_FOR_G992_3_5              =  DISABLE_SAFEMODE_FOR_G992_3_5,         // CQ9500
-  CONTROL_ADI_UPSTREAM_RATES_FIX             =  ENABLE_ADI_UPSTREAM_RATES_FIX,         // CQ 9620 MH 05/16/05
-  CONTROL_NOKIA_D50_GDMT_RETRAIN_FIX         =  ENABLE_NOKIA_D50_GDMT_RETRAIN_FIX,     // CQ9613
-  CONTROL_WESTELL_RFI_OPTION                 =  ENABLE_WESTELL_RFI_OPTION,             // CQ9787 - Westell RFI option
-  CONTROL_REPORT_AVG_MARGIN                  =  ENABLE_REPORT_AVG_MARGIN,              // CQ10012 Ram Avg Margin Reporting; recycled unused bit14
-  CONTROL_CNXT_CLREOC_PATCH                  =  DISABLE_CNXT_CLREOC_PATCH,             // CQ9885 clearEoc fix
-  CONTROL_MAXIMIZE_INP_SUPPORT               =  ENABLE_MAXIMIZE_INP_SUPPORT,           // CQ10045 - Maximize the INP support in fixed and capped rates
-  CONTROL_TELEFONICA_FIXED_MARGIN            =  ENABLE_TELEFONICA_FIXED_MARGIN,        // CQ10173
-  CONTROL_MINIMIZE_INTERLEAVER_DELAY         =  ENABLE_MINIMIZE_INTERLEAVER_DELAY,     // CQ10045 - Minimize the interleaver delay in fixed and capped rates
-  CONTROL_ANNEXB_US_STARTBIN                 =  ENABLE_ANNEXB_US_STARTBIN,             // CQ10198 Extend Annex B US to bin 28
-// UR8_MERGE_START API-Bits PeterHou
-  CONTROL_DETECT_MORE_COMB1TONES             =  ENABLE_DETECT_MORE_COMB1TONES,         // CQ10385 - Detect more Comb1 tones to combat Comb1-like crosstalk noise in ADSL2/2+ mode.
-  CONTROL_CNXT_US_FLAVOR_B                   =  ENABLE_CNXT_US_FLAVOR_B,               // CQ10471 - Use CNXT Upstream flavor B in G.DMT & T1.413 mode
-// UR8_MERGE_END API-Bits
-  // UR8_MERGE_START CQ10600 ManjulaK
-  CONTROL_ETISALAT_US_CRC_N_LINEDROP_FIX     =  ENABLE_ETISALAT_US_CRC_N_LINEDROP_FIX,  //CQ10600- add quantization noise to upstream signal from G2_MedleyA to G2_MedleyH state
-  // UR8_MERGE_END CQ10600
-  CONTROL_TELIA_SONERA_FIX                   =  ENABLE_TELIA_SONERA_FIX,
-  // UR8_MERGE_START_END_CQ10899 MH
-  CONTROL_ECHO_BAND_DS_SNR_CUTBACK           =  ENABLE_ECHO_BAND_DS_SNR_CUTBACK,
-  // UR8_MERGE_START_END CQ11075_API25 YW
-  CONTROL_LINE_STABILITY_2DBPAD_MARGIN       =  ENABLE_LINE_STABILITY_2DBPAD_MARGIN,
-  //UR8_MERGE_START CQ11023 Hao-Ting Lin
-  CONTROL_PCCW_CNXT_FIX                      =  ENABLE_PCCW_CNXT_FIX,
-  //UR8_MERGE_END CQ11023
-  //UR8_MERGE_START CQ11031 Hao-Ting Lin
-  CONTROL_VERSION_NO_16BYTES                 =  ENABLE_VERSION_NO_16BYTES,
-  //UR8_MERGE_END CQ11031
-  //UR8_MERGE_START CQ11021 CQ11022 Hao-Ting Lin
-  CONTROL_NORWAY_COMLAB_FIX                  =  ENABLE_NORWAY_COMLAB_FIX,
-  //UR8_MERGE_END CQ11021 CQ11022 Hao-Ting Lin
-  // UR8_MERGE_START_END CQ10819 Ram
-  CONTROL_OPTUS_BTLOOP_FIX                   =  ENABLE_OPTUS_BTLOOP_FIX,
-  // UR8_MERGE_START_END CQ11080 Manjula/KC
-  CONTROL_CTLM_LOW_USRATE_FIX                =  ENABLE_CTLM_LOW_USRATE_FIX 
-};
+//UR8_MERGE_START_CQ11341 AdeelJ
+//removed redundant CONTROL enum for Interop 0
+//UR8_MERGE_END_CQ11341
+
 
 //interop_1
 enum{
    // UR8_MERGE_START_START_END CQ11230
-   ENABLE_TR067_DSPCB_FIX                   = BIT0
+   ENABLE_TR067_DSPCB_FIX                   = BIT0,
+   // UR8_MERGE_START_END CQ11306 AdeelJ
+   ENABLE_GREECE_OTE_ANNEXB_FIX             = BIT1,
+   // UR8_MERGE_START_END CQ11260 WT100_CTLM_B900 HL
+   ENABLE_CTLM_B900_O2_FIX                  = BIT2,
+   // UR8_MERGE_START_END CQ11260 WT100_CTLM_B900 HL
+   ENABLE_FORCED_US_PCB_14DB_NULLLOOP       = BIT3,
+   // UR8_MERGE_START_END CQ11425 KCCHEN
+   ENABLE_CNXT_PMD_FIX                      = BIT4,
+   ENABLE_BRITISH_TELECOM_FIX               = BIT5 //UR8_MERGE_START_END CQ11307 Ram
 };
 
-enum{
-  // UR8_MERGE_START_START_END CQ11230
-  CONTROL_TR067_DSPCB_FIX                    =  ENABLE_TR067_DSPCB_FIX  
-};
+//UR8_MERGE_START_CQ11341 AdeelJ
+//removed redundant CONTROL enum for Interop 1
+//UR8_MERGE_END_CQ11341
+
 
 enum  //(CQ10242)
 {
@@ -1140,8 +1130,8 @@ typedef struct
 // ----------------------------------------
 // Begin datapump code overlay definitions.
 // ----------------------------------------
-
-#define DEV_HOST_PAGE_NUM 11   // number of overlay pages (page 0 + number of overlay pages)
+//UR8_MERGE_START_END CQ11516 Tim
+#define DEV_HOST_PAGE_NUM 13   // (CQ11516) number of overlay pages (page 0 + number of overlay pages)
 
 #define MAX_NUM_INIT_STATES 255 // number of states in the DSP state machine
 
@@ -1762,7 +1752,6 @@ typedef struct
 typedef struct
 {
   UINT32 phyFeature;                       // Feature bits
-  UINT32 phyControl;                       // Control bits
 } DEV_HOST_phyFeatureConfiguration_t;
 
 typedef struct

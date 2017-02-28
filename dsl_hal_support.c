@@ -483,7 +483,7 @@ int  dslhal_support_unresetDslSubsystem(void)
   shim_osClockWait(64);
   dgprintf(5,"Brought ADSLSS out of Reset \n");
 
-  DSLHAL_REG32(REG_GPIOENR) &= ~(BIT20|BIT21|BIT22|BIT23|BIT24|BIT25);
+//  DSLHAL_REG32(REG_GPIOENR) &= ~(BIT20|BIT21|BIT22|BIT23|BIT24|BIT25);
   shim_osClockWait(64);
   dgprintf(5,"Configured GPIO 20-25 for McBSP \n");
 

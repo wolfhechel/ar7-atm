@@ -322,6 +322,8 @@
 // UR8_MERGE_START CQ11007  KCCHEN
 // 09/26/06 KCCHEN       CQ11007 : US SNR margin update
 // UR8_MERGE_END CQ11007 KCCHEN
+// UR8_MERGE_START_END CQ11426 AdeelJ
+// 01/26/07 AdeelJ       CQ11426 : Removed definition on RTT_VCXO_IN_HEADER as was no longer required
 //*************************************************************************************************************************
 //*
 //* The default flag settings are:
@@ -883,10 +885,8 @@
 #ifndef RTT_CONSTELLATION_DS_ENABLE
 #define RTT_CONSTELLATION_DS_ENABLE 0
 #endif
-#ifndef RTT_VCXO_IN_HEADER
-#define RTT_VCXO_IN_HEADER 1
-#endif
-
+//UR8_MERGE_START_END_CQ11426 AdeelJ
+// removed RTT_VCXO_IN_HEADER
 #ifndef TXDF2B_PROFILING
 
 #if (SERVICE_POTS)
