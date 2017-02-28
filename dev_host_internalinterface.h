@@ -95,6 +95,9 @@
 * UR8_MERGE_START L2PM Tim
 *  08/31/06  Tim Bornemisza  CQ10756: Added bit to turn off L2PM processing
 * UR8_MERGE_END L2PM Tim
+// UR8_MERGE_START CQ11057 KCCHEN
+// 10/12/06 Kuan-Chen Chen   CQ11057: Request US PMD test parameters from CO side
+// UR8_MERGE_END CQ11057 KCCHEN
 *  (C) Copyright Texas Instruments Inc. 2002.  All rights reserved.
 *******************************************************************************/
 
@@ -301,6 +304,9 @@ typedef struct
   UINT32          recvMsgAddr;          // Address of recv_msg, type of DDI_RX_MSG
   UINT32          xmtMsgAddr;           // Address of xmt_msg, type of DDI_TX_MSG
   UINT32          L1CapCtrlAddr;
+  // UR8_MERGE_START CQ11057 KCCHEN
+  DEV_HOST_BIS_PMD_TEST_PARAMETERS_FROM_CO_Def_t*          BisPmdTestParametersUS_p;
+  // UR8_MERGE_END CQ11057 KCCHEN
 } DEV_HOST_modemEnv_t;
 
 // bit definition for ovhdControl

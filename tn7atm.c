@@ -56,6 +56,9 @@
  *    UR8_MERGE_START CQ10979   Jack Zhang
  *    10/4/06  JZ     CQ10979: Request for TR-069 Support for RP7.1
  *    UR8_MERGE_END   CQ10979*
+ *    UR8_MERGE_START CQ11057   Jack Zhang
+ *    11/03/06 JZ     CQ11057: Request US PMD test parameters from CO side
+ *    UR8_MERGE_END   CQ11057*
 *********************************************************************************************/
 
 #include <linux/config.h>
@@ -294,11 +297,23 @@ static struct
     {"avsar_HLINpsds4",             tn7dsl_proc_HLINpsds4,         NULL},
 #endif //TR69_HLIN_IN
 // *    UR8_MERGE_END   CQ10979*
+// *    UR8_MERGE_START CQ11057   Jack Zhang
+#define TR69_PMD_IN
+#ifdef TR69_PMD_IN
+    {"avsar_PMDTestus",             tn7dsl_proc_PMDus,            NULL},
+//    {"avsar_PMDTestus1",          tn7dsl_proc_PMDus1,            NULL},
+#endif  //TR69_PMD_IN
+// *    UR8_MERGE_END   CQ11057 *
 #endif
     {"avsar_private",               tn7atm_proc_private,           NULL},
     {"avsar_modem_training",        tn7dsl_proc_modem,             NULL},
     {"avsar_modem_stats",           tn7dsl_proc_stats,             tn7dsl_proc_write_stats},
 
+	/* junzhao add to show dsl status at 2007.4.12 */
+	{"avsar_dsl_ticks", 			tn7dsl_state_ticks, 		   NULL},    
+	/* Junzhao add end */
+
+    
 #ifdef ADV_DIAG_STATS //CQ10275
 //for 2.6    {"avsar_modem_adv_stats",       tn7dsl_proc_adv_stats,         NULL},
 //For 2.4 kernel, due to proc file system size limitation

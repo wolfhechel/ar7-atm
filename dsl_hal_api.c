@@ -228,6 +228,18 @@
 *  UR8_MERGE_START CQ10979   Jack Zhang
 *  10/4/06  JZ     CQ10979: Request for TR-069 Support for RP7.1
 *  UR8_MERGE_END   CQ10979*
+// UR8_MERGE_START CQ11057 KCCHEN
+// 10/12/06 Kuan-Chen Chen   CQ11057: Request US PMD test parameters from CO side
+// UR8_MERGE_END CQ11057 KCCHEN
+*  UR8_MERGE_START   CQ11228 HZ
+*  12/08/06     Hao Zhou CQ11228: Modify the DS Margin report to 0.1dB precision, also take care of 
+*                                 possible negative values.
+*  UR8_MERGE_END   CQ11228 HZ 
+*  UR8_MERGE_START CQ11054   Jack Zhang
+*  10/11/06  JZ     CQ11054: Data Precision and Range Changes for TR-069 Conformance
+*  UR8_MERGE_END   CQ11054*
+*  UR8_MERGE_START_END CQ11247_TR69_DS_LATN_SATN  YW
+*  12/18/06   Yan Wang      CQ11247: TR069 range and precision changes for LATNds, SATNds  
 ******************************************************************************/
 #include <dev_host_interface.h>
 #include <dsl_hal_register.h>
@@ -239,6 +251,9 @@
 
 #include <dsl_hal_version.h>
 
+//  UR8_MERGE_START CQ11054   Jack Zhang
+static unsigned int highprecision_selected = 0;  //By default we use low precision for backward compt.
+//  UR8_MERGE_END   CQ11054*
 static unsigned int hybrid_selected;
 static unsigned int showtimeFlag = FALSE;
 static unsigned char triggerDsp250MHZ;
@@ -387,7 +402,17 @@ void programMdma(UINT32 dma, UINT32 source, UINT32 destination, UINT32 length, U
 }
 #endif
 
+//  UR8_MERGE_START CQ11054   Jack Zhang
+unsigned int dslhal_api_getHighPrecision()
+{
+    return highprecision_selected;
+}
+void dslhal_api_setHighPrecision()
 
+{
+    highprecision_selected = 1;
+}
+//  UR8_MERGE_END   CQ11054*
 
 /******************************************************************************************
 * FUNCTION NAME:    dslhal_api_dslStartup
@@ -1261,7 +1286,6 @@ int dslhal_api_getDspVersion(tidsl_t *ptidsl, void  *pVer)
   return DSLHAL_ERROR_NO_ERRORS;
 }
 
-
 /********************************************************************************************
 * FUNCTION NAME: dslhal_api_gatherStatistics()
 *
@@ -1293,11 +1317,19 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
   DEV_HOST_MGMTCount_t          mgmt_Count;
   BIS_MGMT_CountersDef_t        BIS_MGMT_Counters;
 #endif
-
+  // UR8_MERGE_START CQ11057 KCCHEN
+  DEV_HOST_BIS_PMD_TEST_PARAMETERS_FROM_CO_Def_t *BisPmdTestParametersUS_p;
+ // UR8_MERGE_START_END CQ11247_TR69_DS_LATN_SATN  YW  
+  SINT16                  usMargin;
+  int                  usMargintmp;
+  int offset_BisPmdTestParametersUS[] = {7,20};
+  // UR8_MERGE_END CQ11057 KCCHEN
 //  int                           dsNumTones=256;
 //  unsigned int                  TrainedModeEx; //cph999
   unsigned int                  ghsATUCVendorIdAddr;
   int offset[]= {7, 11};        // DEV_HOST_modemEnv_t.ghsATUCVendorIdAddr
+//  UR8_MERGE_START_END   CQ11228 HZ
+  SINT16                dsMargintmp;
 
   dgprintf(5, "dslhal_api_gatherStatistics\n");
 
@@ -1364,27 +1396,39 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
     ptidsl->AppData.atucRevisionNum = (unsigned int)rateparms.atucGhsRevisionNum;
     if(ptidsl->AppData.dsl_modulation < ADSL2_MODE)
       {
-        ptidsl->AppData.usLineAttn = (ptidsl->AppData.bCMsgs2[3] >>2)&0x003f;
-        ptidsl->AppData.usMargin = (ptidsl->AppData.bCMsgs2[2])&0x001f;
+        // UR8_MERGE_START CQ11247_TR69_DS_LATN_SATN  YW
+        ptidsl->AppData.usLineAttn = ((ptidsl->AppData.bCMsgs2[3] >>2)&0x003f); // 0.5dB step 
+        ptidsl->AppData.usMargin = (ptidsl->AppData.bCMsgs2[2])&0x001f; // 1dB step 
+        if (dslhal_api_getHighPrecision())
+        {
+          ptidsl->AppData.usLineAttn *= 5; // 0.1dB step
+          ptidsl->AppData.usMargin   *= 10; // 0.1dB step
+        }
+        // UR8_MERGE_END CQ11247_TR69_DS_LATN_SATN  YW
       }
     else
       {
-        /* Attenuation is precise to the steps of 0.1 dB, however, to maintain uniformity, being reported in 0.5 dB steps */
+        // UR8_MERGE_START CQ11247_TR69_DS_LATN_SATN  YW
+        /* Attenuation is precise to the steps of 0.1 dB */
         ptidsl->AppData.usLineAttn = (ptidsl->adsl2TrainingMessages.cParams[1] & 0x3);
         ptidsl->AppData.usLineAttn <<=8;
         ptidsl->AppData.usLineAttn += ptidsl->adsl2TrainingMessages.cParams[0];
-        ptidsl->AppData.usLineAttn = ptidsl->AppData.usLineAttn/5;
-        // UR8_MERGE_START CQ11007 KCCHEN
-        //Update the us snrm in the dhal
-        dspOamSharedInterface.eocVar_p = (DEV_HOST_eocVarDef_t *) dslhal_support_byteSwap32((unsigned int)dspOamSharedInterface.eocVar_p);
-        rc = dslhal_support_blockRead((PVOID)dspOamSharedInterface.eocVar_p,&eocVar, sizeof(DEV_HOST_eocVarDef_t));
-        if (rc)
+        // UR8_MERGE_END CQ11247_TR69_DS_LATN_SATN  YW
+        // UR8_MERGE_START CQ11057 KCCHEN
+        BisPmdTestParametersUS_p = (DEV_HOST_BIS_PMD_TEST_PARAMETERS_FROM_CO_Def_t *)PHYS_TO_K1(dslhal_support_readInternalOffset(ptidsl, 2, offset_BisPmdTestParametersUS));
+        usMargintmp = *(((unsigned int *)&BisPmdTestParametersUS_p->usMargin));
+        // UR8_MERGE_START CQ11247_TR69_DS_LATN_SATN  YW
+        usMargin = (SINT16) (usMargintmp&0xffff);
+        ptidsl->AppData.usMargin = (int)usMargin;
+        // UR8_MERGE_END CQ11247_TR69_DS_LATN_SATN  YW
+        // UR8_MERGE_END CQ11057 KCCHEN
+        // UR8_MERGE_START CQ11247_TR69_DS_LATN_SATN  YW
+        if (dslhal_api_getHighPrecision() == 0)
         {
-          dgprintf(1,"dslhal_support_blockRead failed\n");
-          return;
+          ptidsl->AppData.usLineAttn /= 5; // 0.5dB step
+          ptidsl->AppData.usMargin   /= 10; // 1dB step
         }
-        ptidsl->AppData.usMargin = (unsigned int)eocVar.usMargin;
-        // UR8_MERGE_END CQ11007 KCCHEN
+        // UR8_MERGE_END CQ11247_TR69_DS_LATN_SATN  YW
       }
     if((rateparms.cRates2 & 0x0f) == 0x01)
       optIdxU = 0;
@@ -1698,10 +1742,7 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
         return;
       }
       ptidsl->AppData.grossGain = (unsigned int)aturMsg.grossGain;
-      // UR8_MERGE_START CQ11007 KCCHEN
-      //This has beem done before while cpe updates the upstream in ADSL2/2+
-      if(ptidsl->AppData.dsl_modulation < ADSL2_MODE)
-      { 
+      // UR8_MERGE_START CQ11057 KCCHEN
         /* Determine DS Line Attenuation & Margin */
         dspOamSharedInterface.eocVar_p = (DEV_HOST_eocVarDef_t *) dslhal_support_byteSwap32((unsigned int)dspOamSharedInterface.eocVar_p);
 
@@ -1712,10 +1753,26 @@ void dslhal_api_gatherStatistics(tidsl_t * ptidsl)
           dgprintf(1,"dslhal_support_blockRead failed\n");
           return;
         }
-      }
-      // UR8_MERGE_END CQ11007 KCCHEN
+      // UR8_MERGE_END CQ11057 KCCHEN
+      // UR8_MERGE_START CQ11247_TR69_DS_LATN_SATN  YW
       ptidsl->AppData.dsLineAttn      = (unsigned int)eocVar.lineAtten;
-      ptidsl->AppData.dsMargin        = (unsigned int)eocVar.dsMargin;
+      ptidsl->AppData.dsLineAttn = dslhal_support_byteSwap16(ptidsl->AppData.dsLineAttn);
+
+      if (dslhal_api_getHighPrecision() == 0)
+      {
+        ptidsl->AppData.dsLineAttn /= 5; // 0.5dB step
+      }      
+      // UR8_MERGE_END CQ11247_TR69_DS_LATN_SATN  YW
+//  UR8_MERGE_START   CQ11228 HZ
+      dsMargintmp = (SINT16)dslhal_support_byteSwap16(eocVar.dsMargin);
+      if(dslhal_api_getHighPrecision())  //By default we use low precision for backward compt.
+      {
+        ptidsl->AppData.dsMargin        = (signed int)dsMargintmp;
+      }else
+      {
+        ptidsl->AppData.dsMargin        = (((signed int)dsMargintmp)*13107 + 0x8000) >> 16; // divide 5 to get 0.5 dB units
+      }
+//  UR8_MERGE_END   CQ11228 HZ      
     }
   }
 
@@ -3854,8 +3911,65 @@ unsigned int dslhal_api_getAdvancedStats(tidsl_t * ptidsl)
 #endif
   return DSLHAL_ERROR_NO_ERRORS;
 }
+// UR8_MERGE_START CQ11057 KCCHEN
+/********************************************************************************************
+* FUNCTION NAME: dslhal_api_getUSPMDTest()
+*
+*********************************************************************************************
+* DESCRIPTION:
+*   Get US PMD Test parameters in ADSL2/2+ mode
+*
+* Input:  PITIDSLHW_T *ptidsl
+*         unsigned short *outbuf: Output buffer supplied from caller.
+*                 for ADSL2 mode, 1*256=256 bytes are expected.
+*                 for ADSL2+ mode, 1*512=512 bytes are expected.
+*         int flag: 0: training. (1: showtime).
+*         **Note: Currently only showtime is supported.
+*
+* Return: DSLHAL_ERROR_NO_ERRORS  success
+*         otherwise               failed
+*
+********************************************************************************************/
+#ifndef NO_ADV_STATS
+unsigned int dslhal_api_getPMDTestus(tidsl_t * ptidsl, CoPMDTestParams_t * co_pmdtest_params_p, int flag)
+{
+  unsigned int offset[2]={7, 20};
+  unsigned int *USPMD= (unsigned int *)
+    PHYS_TO_K1(dslhal_support_readInternalOffset(ptidsl, 2, offset));
+  int i, num_swap32;
+  unsigned int *outbufInt_p= (unsigned int *) co_pmdtest_params_p;
+   
+  dgprintf(5,"dslhal_api_getUSPMD\n");
 
+  if (flag!=1)
+    return DSLHAL_ERROR_INVALID_PARAM;
 
+  // Must be ADSL2/2+ mode
+  if (!(ptidsl->AppData.TrainedMode & (ADSL2PLUS_MASKS|ADSL2_MASKS)) )
+    return DSLHAL_ERROR_UNSUPPORTED_MODE;
+
+  num_swap32 = (sizeof(CoPMDTestParams_t))>>2;
+  
+  for (i=0; i< num_swap32; i++)
+  {
+    *outbufInt_p++= dslhal_support_byteSwap32(*USPMD++);
+  }
+  #ifdef EB
+  for (i=0; i<ptidsl->AppData.max_us_tones; i++)
+  {
+    co_pmdtest_params_p->TestParmCOHlogfMsg[i] = dslhal_support_byteSwap16(co_pmdtest_params_p->TestParmCOHlogfMsg[i]);
+  }
+  co_pmdtest_params_p->co_latn = dslhal_support_byteSwap16(co_pmdtest_params_p->co_latn);
+  co_pmdtest_params_p->co_satn = dslhal_support_byteSwap16(co_pmdtest_params_p->co_satn);
+  co_pmdtest_params_p->usMargin = dslhal_support_byteSwap16(co_pmdtest_params_p->usMargin);
+  co_pmdtest_params_p->co_attndr = dslhal_support_byteSwap32(co_pmdtest_params_p->co_attndr);
+  co_pmdtest_params_p->co_near_actatp = dslhal_support_byteSwap16(co_pmdtest_params_p->co_near_actatp);
+  co_pmdtest_params_p->co_far_actatp = dslhal_support_byteSwap16(co_pmdtest_params_p->co_far_actatp);
+  #endif
+  return DSLHAL_ERROR_NO_ERRORS;
+}
+#endif
+// UR8_MERGE_END CQ11057 KCCHEN
 /********************************************************************************************
 * FUNCTION NAME: dslhal_api_getQLNpsds()
 *
@@ -3956,7 +4070,6 @@ unsigned int dslhal_api_getSNRpsds(tidsl_t * ptidsl, unsigned char *outbuf, int 
   return DSLHAL_ERROR_NO_ERRORS;
 }
 #endif
-
 //*  UR8_MERGE_START CQ10979   Jack Zhang
 /********************************************************************************************
 * FUNCTION NAME: dslhal_api_getHLINpsds()

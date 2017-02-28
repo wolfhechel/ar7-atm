@@ -42,8 +42,8 @@
 
 /* Linux ATM Driver Version Numbers */
 #define LINUXATM_VERSION_MAJOR     07
-#define LINUXATM_VERSION_MINOR     01
-#define LINUXATM_VERSION_BUGFIX    00
-#define LINUXATM_VERSION_BUILDNUM  10
+#define LINUXATM_VERSION_MINOR     02
+#define LINUXATM_VERSION_BUGFIX    01
+#define LINUXATM_VERSION_BUILDNUM  00
 
 #endif /* pairs with #ifndef __VERSION_H__ */

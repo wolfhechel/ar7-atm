@@ -1,4 +1,4 @@
-#ifndef NO_ACT
+//#ifndef NO_ACT
 /*******************************************************************************
 * FILE PURPOSE:     DSL Driver API functions for Advanced Configurations
 *
@@ -943,4 +943,4 @@ unsigned int dslhal_advcfg_setBlackOutBits(tidsl_t * ptidsl)
   return DSLHAL_ERROR_NO_ERRORS;
 }
 
-#endif
+//#endif

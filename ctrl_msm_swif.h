@@ -137,6 +137,7 @@
 //UR8_MERGE_END CQ10781 Hao Ting
 // UR8_MERGE_START_END   CQ10566 MB
 // 05/11/06 Mark Bryan   CQ10566 Added cabinet mode tone set A43c/B43c defintions for downstream.
+// 02/28/06 Kapil Gulati CQ9977: Added a #define for maximum deinterleave memory size. // UR8_MERGE_START_END DEINTERLEAVER_CYCLE_OPTIMIZATION Craig Leeds
 // UR8_MERGE_START CQ11021 Hao-Ting Lin
 //                       Add define used in COMLAB fix
 // UR8_MERGE_END CQ11021 Hao-Ting Lin
@@ -516,6 +517,17 @@
 
 // Max value of (NFECp-1)(Dp-1) allowed by standard.
 #define MAX_NFECp_Dp_PRODUCT                 16002
+
+
+// UR8_MERGE_START DEINTERLEAVER_CYCLE_OPTIMIZATION Craig Leeds
+// 02/28/06 Kapil Gulati CQ9977: Added a #define for maximum deinterleave memory size. 
+// Memory used by the deinterleaver. As of now G.bis standard specifies
+// that (NFECp-1)*(Dp-1) <= 16002. Po's algorithm theoritically uses
+// ((NFECp-1)*(Dp-1)+2)/2 = 16004/2 = 8002. However the current
+// implementation needs upto Dp extra bytes. Hence add that and
+// round it up to the next multiple of 4 bytes.
+#define MAX_DINTLV_MEM (((8002+D_MAX_DS+4)/4)*4)
+// UR8_MERGE_END DEINTERLEAVER_CYCLE_OPTIMIZATION Craig Leeds
 
 
 //CQ 10008. It is found that Annex B DS performance gets degraded if medley end tone is set beyond

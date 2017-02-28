@@ -208,8 +208,30 @@
 *  UR8_MERGE_START CQ10979   Jack Zhang
 *  10/4/06  JZ     CQ10979: Request for TR-069 Support for RP7.1
 *  UR8_MERGE_END   CQ10979*
+*  UR8_MERGE_START CQ11054   Jack Zhang
+*  10/11/06  JZ     CQ11054: Data Precision and Range Changes for TR-069 Conformance
+*  UR8_MERGE_END   CQ11054*
 *  UR8_MERGE_START_END CQ11004
 *    27OCT06    Nima   CQ11004: Added OAMFEATURE_PHY_TI_INTERNAL2 API bit.
+// UR8_MERGE_START CQ11057 KCCHEN
+// 10/12/06 Kuan-Chen Chen   CQ11057: Request US PMD test parameters from CO side
+// UR8_MERGE_END CQ11057 KCCHEN
+*  UR8_MERGE_START   CQ11228 HZ
+*  12/08/06     Hao Zhou CQ11228: Modify the DS Margin report to 0.1dB precision.
+*  UR8_MERGE_END   CQ11228 HZ 
+*  UR8_MERGE_START CQ11054   Jack Zhang
+*  10/11/06  JZ     CQ11054: Data Precision and Range Changes for TR-069 Conformance
+*  UR8_MERGE_END   CQ11054*
+*  UR8_MERGE_START_END CQ11277 Ram
+* 12/22/06              Ram         CQ11277: Added OAMFEATURE_ENABLE_ADSL2_2PLUS_HLIN
+// UR8_MERGE_START_END CQ11247_TR69_DS_LATN_SATN  YW
+// 12/18/06   Yan Wang      CQ11247: TR069 range and precision changes for LATNds, SATNds  
+*  UR8_MERGE_START CQ11230
+*  12/27/06   Hao-Ting Lin
+*  Add OAMFEATURE_FEATURE1 BIT0 for TR067 DSPCB test.
+*  UR8_MERGE_END CQ11230
+*  UR8_MERGE_START_END CQ11281 Ram
+* 12/22/06              Ram         CQ11281: Added OAMFEATURE_ENABLE_GHS_SHORT_RESET
 *******************************************************************************/
 
 #ifdef INTERNAL_BUILD
@@ -257,10 +279,14 @@
 #define OAMFEATURE_PHY_DISABLE_ANNEXM_SUPPORT               0x00020000  //Bit17, CQ10913 YW
 // UR8_MERGE_START_END CQ10960 HZ
 #define OAMFEATURE_PHY_ENABLE_TIME_ERROR_SCALE_CNXT         0x00040000  // Bit18, CQ10960 HZ
+// UR8_MERGE_START_END CQ11277 Ram
+#define OAMFEATURE_ENABLE_ADSL2_2PLUS_HLIN                  0x00080000  // Bit19, CQ11277 Ram
+// UR8_MERGE_START_END CQ11281 Ram
+#define OAMFEATURE_ENABLE_GHS_SHORT_RESET                  0x00100000  // Bit20, CQ11281 Ram
 // UR8_MERGE_START UR8_MERGE_START_END CQ11004 Nima
 #define OAMFEATURE_PHY_TI_INTERNAL2                         0x20000000 // Bit29, CQ11004
 // UR8_MERGE_START API-Bit ManjulaK
-#define OAMFEATURE_PHY_TI_INTERNAL1                         0x40000000 // Bit30, CQ10202
+#define OAMFEATURE_PHY_TI_INTERNAL1                    0x40000000  // Bit30, CQ10202
 // UR8_MERGE_END API-Bit
 
 
@@ -310,6 +336,10 @@
 //UR8_MERGE_START CQ10499   Jack Zhang
 #define MAX_US_TONES      64
 //UR8_MERGE_END CQ10499   Jack Zhang
+
+//UR8_MERGE_START_END CQ11230 Hao-Ting Lin
+#define OAMFEATURE_FEATURE1_ENABLE_TR067_DSPCB_FIX                   0x00000001    //CQ11230 - Enable TR067 DSPCB fix
+
 
 typedef struct tagT1413Info
 {
@@ -402,10 +432,12 @@ typedef struct tagTIOIDINFO
                              /* not on Bad_Hec or Overflow cell) */
 
   unsigned int   dsLineAttn;       /* DS Line Attenuation */
-  unsigned int   dsMargin;         /* Measured DS MArgin */
+//  UR8_MERGE_START_END   CQ11228 HZ
+  signed int     dsMargin;         /* Measured DS MArgin */
 
   unsigned int   usLineAttn;
-  unsigned int   usMargin;
+  // UR8_MERGE_START_END CQ11247_TR69_DS_LATN_SATN  YW
+  int   usMargin;
 
   unsigned char    bCMsgs1[12];  // (was 6) used by both cMsgs1 & cMsg-PCB now, sync from dev_host_interface.h
   unsigned char    bRMsgs1[6];
@@ -2237,7 +2269,59 @@ unsigned int dslhal_api_readPhyFeatureSettings
 unsigned int paramId,
 void *phyFeature
 );
+// UR8_MERGE_START CQ11057   Jack Zhang
 
+//from #include "dev_host_interface.h" 
+
+// Duplicate DEV_HOST_BIS_PMD_TEST_PARAMETERS_FROM_CO_Def_t
+
+typedef struct tagCoPMDTestParams{
+
+  unsigned short TestParmCOHlogfMsg[MAX_US_TONES];
+
+  unsigned char TestParmCOQLNfMsg[MAX_US_TONES];
+
+  unsigned char TestParmCOSNRfMsg[MAX_US_TONES];
+
+  unsigned short co_latn;
+
+  unsigned short co_satn;
+
+  signed short usMargin;                  // DSP Write, measured US margin
+
+  signed short dummy;
+
+  unsigned long co_attndr;
+
+  signed short co_near_actatp;
+
+  signed short co_far_actatp;
+
+}CoPMDTestParams_t;
+// UR8_MERGE_END CQ11057   Jack Zhang
+// UR8_MERGE_START CQ11057 KCCHEN
+/********************************************************************************************
+* FUNCTION NAME: dslhal_api_getPMDTestus()
+*
+*********************************************************************************************
+* DESCRIPTION:
+*   Get US PMD Test parameters in ADSL2/2+ mode
+*
+* Input:  PITIDSLHW_T *ptidsl
+*         unsigned short *outbuf: Output buffer supplied from caller.
+*                 for ADSL2 mode, 1*256=256 bytes are expected.
+*                 for ADSL2+ mode, 1*512=512 bytes are expected.
+*         int flag: 0: training QLNpsds. (1: showtime QLNpsds).
+*         **Note: Currently only training QLNpsds is supported.
+*
+* Return: DSLHAL_ERROR_NO_ERRORS  success
+*         otherwise               failed
+*
+********************************************************************************************/
+#ifndef NO_ADV_STATS
+unsigned int dslhal_api_getPMDTestus(tidsl_t * ptidsl, CoPMDTestParams_t * co_pmdtest_params_p, int flag);
+#endif
+// UR8_MERGE_END CQ11057 KCCHEN
 /********************************************************************************************
 * FUNCTION NAME: dslhal_api_getHLOGpsds()
 *
@@ -2325,6 +2409,33 @@ unsigned int dslhal_api_getSNRpsds(tidsl_t * ptidsl, unsigned char *outbuf, int 
 unsigned int dslhal_api_getHLINpsds(tidsl_t * ptidsl, unsigned char *outbuf, int flag);
 #endif
 //*  UR8_MERGE_END   CQ10979*
+
+//  UR8_MERGE_START CQ11054   Jack Zhang
+/********************************************************************************************
+* FUNCTION NAME: dslhal_api_getHighPrecision
+*
+*********************************************************************************************
+* DESCRIPTION: Get High Precision setting for TR-69 Support;
+* Input: None
+*
+* Return: 0    Low -precision for backward compat.
+*         1    High precision for TR-69 Support mode is on
+*
+********************************************************************************************/
+
+unsigned int dslhal_api_getHighPrecision();
+
+/********************************************************************************************
+* FUNCTION NAME: void dslhal_api_setHighPrecision
+*
+*********************************************************************************************
+* DESCRIPTION: Set High Precision for TR-69 Support
+* Input: None
+* Return: None
+********************************************************************************************/
+
+void dslhal_api_setHighPrecision();
+//  UR8_MERGE_END   CQ11054*
 
 #ifdef INTERNAL_BUILD
 #include <dsl_hal_internal_api.h>

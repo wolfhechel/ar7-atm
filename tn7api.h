@@ -23,6 +23,9 @@
  *    UR8_MERGE_START CQ10979   Jack Zhang
  *    10/4/06  JZ     CQ10979: Request for TR-069 Support for RP7.1
  *    UR8_MERGE_END   CQ10979*
+ *    UR8_MERGE_START CQ11057   Jack Zhang
+ *    11/03/06 JZ     CQ11057: Request US PMD test parameters from CO side
+ *    UR8_MERGE_END   CQ11057*
  ************************************************************************************/
 
 #ifndef __SAPI_H
@@ -79,6 +82,9 @@ void tn7atm_data_writeback(void *pmem, int size);
 void tn7atm_data_invalidate(void *pmem, int size);
 int tn7atm_memcmp(void * dst, void const * src, size_t len);
 void * tn7atm_memcpy(void * dst, void const * src, size_t len);
+
+/* junzhao add 2007.4.12 */
+int tn7dsl_state_ticks(char *buf, char **start, off_t offset, int count, int *eof, void *date);
 
 /* tn7dsl.h */
 void tn7dsl_exit(void);
@@ -144,6 +150,13 @@ int tn7dsl_proc_HLINpsds3(char* buf, char **start, off_t offset, int count,int *
 int tn7dsl_proc_HLINpsds4(char* buf, char **start, off_t offset, int count,int *eof, void *data);
 #endif //TR69_HLIN_IN
 // *    UR8_MERGE_END   CQ10979*
+// *    UR8_MERGE_START CQ11057   Jack Zhang
+#define TR69_PMD_IN
+#ifdef TR69_PMD_IN
+//int tn7dsl_proc_PMDus(char* buf, char **start, off_t offset, int count,int *eof, void *data);
+int tn7dsl_proc_PMDus(char* buf, char **start, off_t offset, int count,int *eof, void *data);
+#endif  //TR69_PMD_IN
+// *    UR8_MERGE_END   CQ11057 *
 #endif
 
 /* tn7sar.c */

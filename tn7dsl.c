@@ -87,6 +87,12 @@
 *  UR8_MERGE_START CQ10979   Jack Zhang
 *  10/4/06  JZ     CQ10979: Request for TR-069 Support for RP7.1
 *  UR8_MERGE_END   CQ10979*
+*  UR8_MERGE_START CQ11057   Jack Zhang
+*  11/03/06 JZ     CQ11057: Request US PMD test parameters from CO side
+*  UR8_MERGE_END   CQ11057*
+*  UR8_MERGE_START CQ11054   Jack Zhang
+*  1/02/07  JZ     CQ11054: Data Precision and Range Changes for TR-069 Conformance
+*  UR8_MERGE_END   CQ11054*
  *********************************************************************************************/
 #include <linux/config.h>
 #include <linux/kernel.h>
@@ -311,6 +317,11 @@ void tn7dsl_dslmod_sysctl_unregister(void);
 static int tn7dsl_clear_eoc_receive(void);
 static int tn7dsl_proc_snr_print (char *buf, int count, int *eof, int data);
 /* end of internal functions */
+
+//  UR8_MERGE_START CQ11054   Jack Zhang
+#define gInt(a) ((int)a/10)
+#define gDot1(a) ((a>0)?(a%10):((-a)%10))
+//  UR8_MERGE_END   CQ11054*
 
 int os_atoi(const char *pStr)
 {
@@ -902,10 +913,24 @@ static int proc_adv_stats_header(char* buf, int limit)
                    (unsigned int)pIhw->AppData.DSConRate );
   }
   if(len<=limit)
-    len +=
-      sprintf (buf + len, "\t[Margin]\tUS:\t%u\tDS:\t\t%u\n",
+//  UR8_MERGE_START CQ11054   Jack Zhang
+  {
+    if (dslhal_api_getHighPrecision())
+    {
+      len +=
+        sprintf (buf + len, "\t[Margin]\tUS:\t%d.%u\tDS:\t\t%d.%u\n",
+                   gInt(pIhw->AppData.usMargin), gDot1(pIhw->AppData.usMargin),
+                   gInt(pIhw->AppData.dsMargin), gDot1(pIhw->AppData.dsMargin));
+    }
+    else
+    {
+      len +=
+        sprintf (buf + len, "\t[Margin]\tUS:\t%u\tDS:\t\t%u\n",
                    (unsigned int)pIhw->AppData.usMargin,
                    (unsigned int)pIhw->AppData.dsMargin/2 );
+    }
+  }
+//  UR8_MERGE_END   CQ11054*
                    
   /*
    * Downstream/Upstream Interleaved Errors
@@ -1394,15 +1419,44 @@ int tn7dsl_proc_stats(char* buf, char **start, off_t offset, int count,
                    (unsigned int)pIhw->AppData.DSConRate );
   }
   if(len<=limit)
-    len +=
-      sprintf (buf + len, "\tDS Line Attenuation:\t%u\tDS Margin:\t\t%u\n",
+//  UR8_MERGE_START CQ11054   Jack Zhang
+  {
+    if (dslhal_api_getHighPrecision())
+    {
+      len +=
+        sprintf (buf + len, "\tDS Line Attenuation:\t%u.%u\tDS Margin:\t\t%d.%u\n",
+                   gInt(pIhw->AppData.dsLineAttn), gDot1(pIhw->AppData.dsLineAttn),
+                   gInt(pIhw->AppData.dsMargin), gDot1(pIhw->AppData.dsMargin));
+    }
+    else{
+      len +=
+        sprintf (buf + len, "\tDS Line Attenuation:\t%u\tDS Margin:\t\t%u\n",
                    (unsigned int)pIhw->AppData.dsLineAttn/2,
                    (unsigned int)pIhw->AppData.dsMargin/2 );
+    }
+  }
+//  UR8_MERGE_END   CQ11054*
+
   if(len<=limit)
-    len +=
-      sprintf (buf + len, "\tUS Line Attenuation:\t%u\tUS Margin:\t\t%u\n",
+//  UR8_MERGE_START CQ11054   Jack Zhang
+  {
+    if (dslhal_api_getHighPrecision())
+    {
+      len +=
+        sprintf (buf + len, "\tUS Line Attenuation:\t%u.%u\tUS Margin:\t\t%d.%u\n",
+                   gInt(pIhw->AppData.usLineAttn), gDot1(pIhw->AppData.usLineAttn),
+                   gInt(pIhw->AppData.usMargin), gDot1(pIhw->AppData.usMargin));
+    }
+    else
+    {
+      len +=
+        sprintf (buf + len, "\tUS Line Attenuation:\t%u\tUS Margin:\t\t%u\n",
                    (unsigned int)pIhw->AppData.usLineAttn/2,
                    (unsigned int)pIhw->AppData.usMargin );
+    }
+  }
+//  UR8_MERGE_END   CQ11054*
+
   if(len<=limit)
     len += sprintf(buf+len, "\tUS Payload :\t\t%u\tDS Payload:\t\t%u\n",
                     ((unsigned int) pIhw->AppData.usAtm_count[0] +
@@ -1546,23 +1600,23 @@ int tn7dsl_proc_stats(char* buf, char **start, off_t offset, int count,
 //  UR8_MERGE_START CQ10978   Jack Zhang
   if(len<=limit)
     len +=
-      sprintf (buf + len, "\tPower Management Status: L%d\tDS HLINSC: %ld\n",
+      sprintf (buf + len, "\tPower Management Status: L%d\tDS HLINSC: %d\n",
              pIhw->AppData.pwrStatus, pIhw->AppData.dsHLINSC);
 //  UR8_MERGE_END   CQ10978*
 
   if(len<=limit)
     len +=
-      sprintf (buf + len, "\tUS ACTPSD: \t\t%ld\tDS ACTPSD: %ld\n",
+      sprintf (buf + len, "\tUS ACTPSD: \t\t%d\tDS ACTPSD: %d\n",
              pIhw->AppData.usACTPSD, pIhw->AppData.dsACTPSD);
 
   if(len<=limit)
     len +=
-      sprintf (buf + len, "\tTotal init. errors: \t%ld\tTotal init. timeouts: %ld\n",
+      sprintf (buf + len, "\tTotal init. errors: \t%d\tTotal init. timeouts: %d\n",
              pIhw->AppData.totalInitErrs, pIhw->AppData.totalInitTOs);
 
   if(len<=limit)
     len +=
-      sprintf (buf + len, "\tShowtime init. errors: \t%ld\tShowtime init. timeouts: %ld\n",
+      sprintf (buf + len, "\tShowtime init. errors: \t%d\tShowtime init. timeouts: %d\n",
              pIhw->AppData.showtimeInitErrs, pIhw->AppData.showtimeInitTOs);
 
   if(len<=limit)
@@ -3006,6 +3060,10 @@ int tn7dsl_init(void *priv)
   char *cp = NULL;
   int retVal = 0;
 
+//  UR8_MERGE_START CQ11054   Jack Zhang
+  int high_precision_selected = 0;  
+//  UR8_MERGE_END   CQ11054*
+
   /*
    * start dsl
    */
@@ -3049,6 +3107,23 @@ int tn7dsl_init(void *priv)
   pIhw->AppData.dsTxPower=0;
 
 // tn7dsl_clear_eoc_setup(); //cph clearEoc debug
+
+//  UR8_MERGE_START CQ11054   Jack Zhang
+  cp = prom_getenv("high_precision");
+  if (cp)
+  {
+    high_precision_selected = os_atoi(cp);
+  }
+  if ( high_precision_selected)
+  {
+    printk("%s : env var high_precision is set.\n", __FUNCTION__);
+    /*
+     * indicate to the DHAL to use the high precision.
+     */
+    dslhal_api_setHighPrecision();
+  }
+//  UR8_MERGE_END   Cq11054*
+
   return 0;
 }
 
@@ -3770,6 +3845,33 @@ static void tn7dsl_diagnostic_test(char *data)
 
 #endif
 
+
+/* junzhao add to show dsl status at 2007.4.12 */
+int tn7dsl_state_ticks(char *buf, char **start, off_t offset, int count, 
+					   int *eof, void *date)
+{
+	int len = 0;
+	int limit = count - 80;
+	trainStateInfo trainStates;
+
+	dslhal_advcfg_getTrainingState(pIhw, &trainStates);
+
+	if(len <= limit)
+		len += sprintf(buf + len, "\nDisplay Training Counters\n\n");
+	if(len <= limit)
+		len += sprintf(buf + len, "\tIdle Tick: \t0x%x\n", pIhw->AppData.idleTick);
+	if(len <= limit)
+		len += sprintf(buf + len, "\tInit Tick: \t0x%x\n", pIhw->AppData.initTick);
+	if(len <= limit)
+		len += sprintf(buf + len, "\tSync Tick: \t0x%x\n\n", pIhw->AppData.showtimeTick);
+	if(len <= limit)
+		len += sprintf(buf + len, "\tState:%d,  Substate:%d,  Timestamp:%d\n", trainStates.aturState, trainStates.subStateIndex, trainStates.timeStamp);
+
+	return len;
+}	
+//junzhao end
+
+
 static void tn7dsl_chng_modulation(void* data)
 {
   unsigned char tmp1[64], tmp2[64], *p;
@@ -3822,6 +3924,34 @@ static void tn7dsl_chng_modulation(void* data)
     dslhal_api_sendQuiet(pIhw);
     return;
   }
+
+  /* junzhao add for Continuously Sending Mode at 2007.04.12 
+	Command format: marginmonitor:train.showtime 
+	 train	 : on -- To leave the training margin monitor in the enabled state
+			   off-- To disable the showtime margin monitor	 
+	 showtime: on -- To disable retrains due to LOS
+			   off-- From AR7 D5.0 onwrds this logic has been reversed, using 0 					 to instead
+  */
+  if(strstr(data, "marginmonitor"))
+  {
+
+  	unsigned int train = TRUE;
+ 	unsigned int showt = TRUE;	
+  	unsigned char *trainP, *showtP;
+	strsep(&data, ":");
+    trainP = strsep(&data, ".");
+	showtP = strsep(&data, "\0");
+	if((trainP == NULL) || (showtP == NULL))
+		return;
+	if(!strcmp(trainP, "off"))
+		train = FALSE;
+	if(!strcmp(showtP, "off"))
+		showt = FALSE;	
+	dslhal_api_setMarginMonitorFlags(pIhw, train, showt);
+  	return;
+  }    
+/* junzhao end */
+
 
   //fine gain
   if(!strcmp(data, "gainctlon"))
@@ -4662,3 +4792,88 @@ int tn7dsl_proc_HLINpsds4(char* buf, char **start, off_t offset, int count,int *
 #endif
 #endif //TR69_HLIN_IN
 //  UR8_MERGE_END   CQ10979*
+
+// *    UR8_MERGE_START CQ11057   Jack Zhang
+#ifdef TR69_PMD_IN
+#ifndef NO_ADV_STATS
+int tn7dsl_proc_PMDus(char* buf, char **start, off_t offset, int count,int *eof, void *data)
+{
+  int len = 0;
+
+  int limit = count - 80;
+  int i;
+  CoPMDTestParams_t  co_pmdtest_params;
+  
+  if(len<=limit)
+    len += sprintf(buf+len, "\nAR7 US PMD Test:\n");
+
+  // call API instead of access internal buf directly
+  if (dslhal_api_getPMDTestus(pIhw, &co_pmdtest_params, 0) != DSLHAL_ERROR_NO_ERRORS)
+  {
+    dgprintf(4, "dslhal_api_getPMDTestus failed!\n");
+    return len;
+  }
+
+  if(len<=limit)
+    len += sprintf(buf+len, "LATN=%d\n", co_pmdtest_params.co_latn);
+
+  if(len<=limit)
+    len += sprintf(buf+len, "SATN=%d\n", co_pmdtest_params.co_satn);
+
+  if(len<=limit)
+    len += sprintf(buf+len, "SNRM=%d\n", co_pmdtest_params.usMargin);
+
+  if(len<=limit)
+    len += sprintf(buf+len, "attndr=%ld\n", co_pmdtest_params.co_attndr);
+
+  if(len<=limit)
+    len += sprintf(buf+len, "NearActatp=%d\n", co_pmdtest_params.co_near_actatp);
+
+  if(len<=limit)
+    len += sprintf(buf+len, "FarActatp=%d\n", co_pmdtest_params.co_far_actatp);
+
+  //HLOG
+  for (i=0; i<pIhw->AppData.max_us_tones; i++)
+  {
+    if (!(i%16))
+    {
+      if(len <=limit)
+        len += sprintf(buf+len, "\nHLOG(%3d):", i);
+    }
+    if(len <=limit)
+      len += sprintf(buf+len, " %d", co_pmdtest_params.TestParmCOHlogfMsg[i]);
+  }
+
+  //QLN
+  for (i=0; i<pIhw->AppData.max_us_tones; i++)
+  {
+    if (!(i%16))
+    {
+      if(len <=limit)
+        len += sprintf(buf+len, "\nQLN(%3d):", i);
+    }
+    if(len <=limit)
+      len += sprintf(buf+len, " %d", co_pmdtest_params.TestParmCOQLNfMsg[i]);
+
+  }
+
+  //SNR
+  for (i=0; i<pIhw->AppData.max_us_tones; i++)
+  {
+    if (!(i%16))
+    {
+      if(len <=limit)
+        len += sprintf(buf+len, "\nSNR(%3d):", i);
+    }
+    if(len <=limit)
+      len += sprintf(buf+len, " %d", co_pmdtest_params.TestParmCOSNRfMsg[i]);
+  }
+
+  if(len <=limit)
+    len += sprintf(buf+len, "\n");
+
+  return len;
+}
+#endif //NO_ADV_STATS
+#endif //TR69_PMD_IN
+// *    UR8_MERGE_END   CQ11057 *

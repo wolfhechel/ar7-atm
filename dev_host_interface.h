@@ -379,11 +379,30 @@
 *  10/27/06  Nima   CQ11004: Added ENABLE_PHY_TI_INTERNAL2 API bit.
 *  UR8_MERGE_START_END CQ11004 Nima Ferdosi
 *  11/02/06  Nima   CQ11004: Renamed ENABLE_PHY_TI_INTERNAL2 API bit to DISABLE_PHY_TI_INTERNAL2
+*  UR8_MERGE_START_END CQ11161 Nima Ferdosi
+*  11/15/06  Nima   CQ11161: Added a new field to DEV_HOST_eocVarDef_t to have the upstream margin with 0.1 dB granularity.
+*  UR8_MERGE_START   CQ11194 HZ
+*  12/05/06 Hao Zhou CQ11194: Modify the estimation of attainable DS data rate.
+*                    Add a variable 'raOVRate' in the structure 'DSPWrNegoPara' in this file.    
+*  UR8_MERGE_END CQ11194 HZ
+// UR8_MERGE_START CQ11057 KCCHEN
+// 10/12/06 Kuan-Chen Chen   CQ11057: Request US PMD test parameters from CO side
+// UR8_MERGE_END CQ11057 KCCHEN
+*  UR8_MERGE_START   CQ11228 HZ
+*  12/08/06     Hao Zhou CQ11228: Modify the DS Margin report to 0.1dB precision.
+*  UR8_MERGE_END   CQ11228 HZ
+// UR8_MERGE_START_END CQ11277 Ram
+// 12/22/06 Ram      CQ11277: Hlin Computation is protected with API bit ENABLE_ADSL2_2PLUS_HLIN
+*  UR8_MERGE_START_END CQ11247_TR69_DS_LATN_SATN  YW
+*  12/18/06   Yan Wang      CQ11247: TR069 range and precision changes for LATNds, SATNds  
+*  UR8_MERGE_START CQ11230 Hao-Ting Lin
+*  12/18/06 Hao-Ting Lin  Add API bit 31 TR067_DSPCB_FIX
+*  UR8_MERGE_END CQ11230 Hao-Ting Lin
+// 12/23/06 Ram      CQ11281: Added API bit for shorter g.hs Reset time ENABLE_GHS_SHORT_RESET
 * (C) Copyright Texas Instruments Inc. 2002.  All rights reserved.
 *******************************************************************************/
 
 #include "dev_host_verdef.h"
-
 // DW 12/28/04 Bit mask definitions, intended for general use
 #define BIT0                 0x00000001
 #define BIT1                 0x00000002
@@ -667,6 +686,10 @@ enum
   DISABLE_ANNEXM_SUPPORT       =  BIT17,       // CQ10913
 // UR8_MERGE_START_END CQ10960 HZ  
   ENABLE_TIME_ERROR_SCALE_CNXT = BIT18,         //CQ10960 HZ
+  // UR8_MERGE_START_END CQ11277 Ram
+  ENABLE_ADSL2_2PLUS_HLIN = BIT19,    //CQ11277 Ram
+  // UR8_MERGE_START_END CQ11281 Ram
+  ENABLE_GHS_SHORT_RESET = BIT20,     //CQ11281 Ram
   // UR8_MERGE_START CQ11004 Nima
   // UR8_MERGE_START_END Renamed ENABLE_PHY_TI_INTERNAL2 to DISABLE_PHY_TI_INTERNAL2
   DISABLE_PHY_TI_INTERNAL2    = BIT29,    //CQ11004
@@ -774,7 +797,18 @@ enum
   // UR8_MERGE_START_END CQ10819 Ram
   CONTROL_OPTUS_BTLOOP_FIX                   =  ENABLE_OPTUS_BTLOOP_FIX,
   // UR8_MERGE_START_END CQ11080 Manjula/KC
-  CONTROL_CTLM_LOW_USRATE_FIX                =  ENABLE_CTLM_LOW_USRATE_FIX
+  CONTROL_CTLM_LOW_USRATE_FIX                =  ENABLE_CTLM_LOW_USRATE_FIX 
+};
+
+//interop_1
+enum{
+   // UR8_MERGE_START_START_END CQ11230
+   ENABLE_TR067_DSPCB_FIX                   = BIT0
+};
+
+enum{
+  // UR8_MERGE_START_START_END CQ11230
+  CONTROL_TR067_DSPCB_FIX                    =  ENABLE_TR067_DSPCB_FIX  
 };
 
 enum  //(CQ10242)
@@ -950,9 +984,12 @@ typedef struct
                              // a pointer list of pointers. It will be used to pass all the new ADSL2 DELT messages to
                              // host side. This is for ACT.
   UINT8  rcvMode;            // rcvMode for physical layer transactions. Trainmode will be used for all messaging
-  UINT8  bDummy2[3];         // for integer alignment
+// UR8_MERGE_START_END CQ11194 HZ  
+  UINT8  bDummy2;            // for integer alignment
   UINT16 annex_selected;     // Annex that the modem trained up with.
   UINT16 psd_mask_qualifier; // Bit definitions given above in the files.
+// UR8_MERGE_START_END CQ11194 HZ
+  SINT16 raOVRate;           // Store the overhead data rate calculated at training time. 
 } DEV_HOST_dspWrNegoParaDef_t;
  
 
@@ -1223,13 +1260,18 @@ typedef struct
   UINT8        eocReg5Length;             // Host Write, valid length for EOC register 5
   UINT8        selfTestResults[2];        // EOC selftestResults place holder
   UINT32       eocModemStatusReg;         // Dsp Write, status bits to host
-  UINT8        lineAtten;                 // Dsp Write, line attenuation in 0.5 db step
-  SINT8        dsMargin;                  // DSP Write, measured DS margin
+  // UR8_MERGE_START CQ11247_TR69_DS_LATN_SATN  YW
+  UINT16       lineAtten;               // Dsp Write, line attenuation in 0.1 db step
+  //   UR8_MERGE_START   CQ11228 HZ
+  SINT16       dsMargin;                  // DSP Write, measured DS margin in 0.1 db precision
+ //   UR8_MERGE_END   CQ11228 HZ
+  // UR8_MERGE_END CQ11247_TR69_DS_LATN_SATN  YW
   UINT8        aturConfig[30];            // Dsp Write, also used by EOC for ATUR Configuration
+  // UR8_MERGE_START_END CQ11247_TR69_DS_LATN_SATN  YW
+  SINT8        dummy[2];                  // 32-bit alignment
   UINT8        revNumber_2p[16];          // CQ10037- Host, ATU-R Version Number, used only in ADSL2, ADSL2plus mode.
-// UR8_MERGE_START_END CQ11007 KCCHEN
-  SINT8        usMargin;                  // DSP Write, measured US margin
-  SINT8        reserved[3];               // 32-bit alignment   // UR8_MERGE_START_END CQ11007 Ram
+  // UR8_MERGE_START_END CQ11057 KCCHEN
+  // Removed unused variables.
 //UR8_MERGE_START_END CQ10989 ManjulaK
   UINT8        selfTestResults_2p[4];     // CQ10989-INVTRY selftestResults place holder for ADSL2, ADSL2plus
 } DEV_HOST_eocVarDef_t;
@@ -1777,6 +1819,21 @@ typedef struct //(CQ10242)
  PUINT8         buffaddr;              // address of debug buffer (an array of char)
 } DEV_HOST_Cli2lctl_t;
 
+// UR8_MERGE_START CQ11057 KCCHEN
+#define MAX_US_TONES 64
+typedef struct {
+  unsigned short TestParmCOHlogfMsg[MAX_US_TONES];
+  unsigned char TestParmCOQLNfMsg[MAX_US_TONES];
+  unsigned char TestParmCOSNRfMsg[MAX_US_TONES];
+  UINT16 co_latn;
+  UINT16 co_satn;
+  signed short usMargin;                  // DSP Write, measured US margin
+  signed short dummy;
+  UINT32 co_attndr;
+  signed short co_near_actatp;
+  signed short co_far_actatp;
+}DEV_HOST_BIS_PMD_TEST_PARAMETERS_FROM_CO_Def_t;
+// UR8_MERGE_END CQ11057 KCCHEN
 
 // --------------------------------------------------------------------------------------
 // Typedef to be used for the DEV_HOST_dspOamSharedInterface_s struct of pointers
